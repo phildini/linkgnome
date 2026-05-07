@@ -47,6 +47,7 @@ class ScoredLink:
     url: str
     canonical_url: str
     score: float
+    title: str = ""
     post_count: int = 0
     boost_count: int = 0
     like_count: int = 0

@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, urljoin, urlparse, urlunparse
 
 from linkgnome.fetchers.base import Post, ScoredLink
+from linkgnome.link_meta import LinkMetadataCache, fetch_all_titles
 
 
 
@@ -23,23 +24,38 @@ def _is_noise_url(url: str) -> bool:
         "cdn.masto.host",
         "sfo2.cdn.digitaloceanspaces.com",
         "media.mastodon.scot",
-        "archive.org/details/",
-        "m.youtube.com",
         "/web/20",
         "instructure-uploads-ap",
         "mastodon.archive.org",
+        "mastodon.social/collec",
+        "mastodon.social/@",
+        "app.wafrn.net/dashboar",
+        "friends.chasmcity.net",
     ]
 
     for indicator in noise_indicators:
         if indicator in url_lower:
             return True
 
+    if url_lower.startswith("https://www") or url_lower.startswith("http://www"):
+        domain_part = url_lower.split("://", 1)[1].split("/", 1)[0].split("?", 1)[0]
+        if domain_part in ("www",):
+            return True
+
+    parsed = urlparse(url)
+    if parsed.netloc in ("www", "www.", "http://www", "https://www"):
+        return True
+
+    if url_lower.rstrip("/").removeprefix("https://") in ("www", "www.") or url_lower.rstrip("/") == "https://www.":
+        return True
+
     return False
 
 
-def score_links(
+async def score_links(
     posts: list[Post],
     period_hours: int = 24,
+    metadata_cache: "LinkMetadataCache | None" = None,
 ) -> list[ScoredLink]:
     """Score links from posts based on engagement."""
     cutoff = datetime.now(timezone.utc) - timedelta(hours=period_hours)
@@ -59,20 +75,33 @@ def score_links(
                 link_groups[canonical] = []
             link_groups[canonical].append(post)
 
+    unique_urls = list(link_groups.keys())
+
+    titles: dict[str, str | None] = {}
+    if metadata_cache and unique_urls:
+        titles = await fetch_all_titles(unique_urls, metadata_cache)
+
     scored_links = []
-    for canonical_url, posts in link_groups.items():
-        original_count = sum(1 for p in posts if not p.is_boost)
-        boost_count = sum(1 for p in posts if p.is_boost)
-        like_count = sum(p.like_count for p in posts)
+    for canonical_url, posts_group in link_groups.items():
+        if titles.get(canonical_url) is None and metadata_cache is not None:
+            cached = metadata_cache.get(canonical_url)
+            if cached and cached["status_code"] >= 400:
+                continue
+
+        original_count = sum(1 for p in posts_group if not p.is_boost)
+        boost_count = sum(1 for p in posts_group if p.is_boost)
+        like_count = sum(p.like_count for p in posts_group)
 
         score = original_count * 1.0 + boost_count * 0.5 + like_count * 0.25
 
         if score > 0:
             source_urls = set()
             source_platforms = set()
-            for post in posts:
+            for post in posts_group:
                 source_urls.add(post.id)
                 source_platforms.add(post.platform)
+
+            title = titles.get(canonical_url) or canonical_url
 
             scored_link = ScoredLink(
                 url=canonical_url,
@@ -81,8 +110,9 @@ def score_links(
                 post_count=original_count,
                 boost_count=boost_count,
                 like_count=like_count,
-                posts=posts,
+                posts=posts_group,
                 source_platforms=source_platforms,
+                title=title,
             )
             scored_links.append(scored_link)
 

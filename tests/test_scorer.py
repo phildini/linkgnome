@@ -34,7 +34,7 @@ class TestScoreLinks:
     def test_basic_scoring_original_post(self):
         """Test that an original post gets 1.0 points."""
         posts = [_create_post(id="post-1", urls=["https://example.com/article"])]
-        scored = score_links(posts, period_hours=24)
+        scored = _run_sync(score_links, posts, period_hours=24)
 
         assert len(scored) == 1
         assert scored[0].url == "https://example.com/article"
@@ -49,7 +49,7 @@ class TestScoreLinks:
                 id="post-1", urls=["https://example.com/article"], is_boost=True
             )
         ]
-        scored = score_links(posts, period_hours=24)
+        scored = _run_sync(score_links, posts, period_hours=24)
 
         assert len(scored) == 1
         assert scored[0].score == 0.5
@@ -62,7 +62,7 @@ class TestScoreLinks:
                 id="post-1", urls=["https://example.com/article"], like_count=4
             )
         ]
-        scored = score_links(posts, period_hours=24)
+        scored = _run_sync(score_links, posts, period_hours=24)
 
         assert len(scored) == 1
         assert scored[0].score == 2.0  # 1.0 (post) + 4 × 0.25 (likes) = 2.0
@@ -79,7 +79,7 @@ class TestScoreLinks:
                 id="post-3", urls=["https://example.com/article"], like_count=4
             ),
         ]
-        scored = score_links(posts, period_hours=24)
+        scored = _run_sync(score_links, posts, period_hours=24)
 
         assert len(scored) == 1
         assert scored[0].score == 3.5  # 1.0 + (1.0 + 0.5) + (1.0 + 4*0.25)
@@ -93,7 +93,7 @@ class TestScoreLinks:
             _create_post(id="post-1", urls=["https://example.com/article"]),
             _create_post(id="post-2", urls=["https://example.com/article"]),
         ]
-        scored = score_links(posts, period_hours=24)
+        scored = _run_sync(score_links, posts, period_hours=24)
 
         assert len(scored) == 1
         assert scored[0].post_count == 2
@@ -109,7 +109,7 @@ class TestScoreLinks:
                 id="post-2", urls=["https://example.com/article"], hours_ago=old_time
             ),
         ]
-        scored = score_links(posts, period_hours=24)
+        scored = _run_sync(score_links, posts, period_hours=24)
 
         assert len(scored) == 1
         assert scored[0].score == 1.0
@@ -122,7 +122,7 @@ class TestScoreLinks:
             _create_post(id="post-2", urls=["https://example.com/high"]),
             _create_post(id="post-3", urls=["https://example.com/high"], is_boost=True),
         ]
-        scored = score_links(posts, period_hours=24)
+        scored = _run_sync(score_links, posts, period_hours=24)
 
         assert len(scored) == 2
         assert scored[0].url == "https://example.com/high"
@@ -130,7 +130,7 @@ class TestScoreLinks:
 
     def test_empty_posts(self):
         """Test that empty post list returns empty scored links."""
-        scored = score_links([], period_hours=24)
+        scored = _run_sync(score_links, [], period_hours=24)
         assert len(scored) == 0
 
     def test_no_urls(self):
@@ -138,7 +138,7 @@ class TestScoreLinks:
         posts = [
             _create_post(id="post-1", urls=[]),
         ]
-        scored = score_links(posts, period_hours=24)
+        scored = _run_sync(score_links, posts, period_hours=24)
         assert len(scored) == 0
 
     def test_multiple_unique_urls(self):
@@ -147,7 +147,7 @@ class TestScoreLinks:
             _create_post(id="post-1", urls=["https://example.com/a"]),
             _create_post(id="post-2", urls=["https://example.com/b"]),
         ]
-        scored = score_links(posts, period_hours=24)
+        scored = _run_sync(score_links, posts, period_hours=24)
 
         assert len(scored) == 2
         urls = {s.url for s in scored}
@@ -166,10 +166,16 @@ class TestScoreLinks:
             urls=["https://example.com/article"],
             platform=Platform.BLUESKY,
         )
-        scored = score_links([mast_post, bsky_post], period_hours=24)
+        scored = _run_sync(score_links, [mast_post, bsky_post], period_hours=24)
 
         assert len(scored) == 1
         assert scored[0].source_platforms == {Platform.MASTODON, Platform.BLUESKY}
+
+
+def _run_sync(async_fn, *args, **kwargs):
+    """Run an async function synchronously in tests."""
+    import asyncio
+    return asyncio.run(async_fn(*args, **kwargs))
 
 
 class TestNormalizeUrl:
