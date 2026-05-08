@@ -186,7 +186,7 @@ def _display_links_page(
         if link.title and link.title != link.url:
             text.append(f"{link.title}  ", style="bold")
 
-        text.append(_truncate_url(link.url, 80), style="blue underline link " + link.url)
+        text.append(link.url, style="blue underline link " + link.url)
         text.append("\n")
         text.append(f"    by {_get_from_display(link)}", style="dim")
 
@@ -219,13 +219,6 @@ def _get_platform_parts(scored_link: ScoredLink) -> list[tuple[str, str]]:
     if Platform.BLUESKY in scored_link.source_platforms:
         parts.append(("blue", "B"))
     return parts
-
-
-def _truncate_url(url: str, max_length: int = 80) -> str:
-    """Truncate a URL for display."""
-    if len(url) <= max_length:
-        return url
-    return url[: max_length - 3] + "..."
 
 
 def _get_from_display(scored_link: ScoredLink, max_length: int = 80) -> str:
