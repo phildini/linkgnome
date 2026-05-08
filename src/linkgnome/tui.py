@@ -9,18 +9,17 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
-from linkgnome.cache import FeedCache
+from linkgnome.db import LinkgnomeDB
 from linkgnome.config import LinkgnomeSettings
 from linkgnome.fetchers.base import Platform, Post, TimelineType
 from linkgnome.fetchers.mastodon import MastodonFetcher
-from linkgnome.link_meta import LinkMetadataCache
 from linkgnome.scorer import ScoredLink, score_links
 
 console = Console()
 
-PLATFORM_ICON = {
-    Platform.MASTODON: "[magenta]🟣[/magenta]",
-    Platform.BLUESKY: "[blue]🔵[/blue]",
+PLATFORM_COLOR = {
+    Platform.MASTODON: "magenta",
+    Platform.BLUESKY: "blue",
 }
 
 
@@ -34,11 +33,12 @@ def run_tui(
     console.print("\n[cyan bold]Fetching links from your feeds...[/cyan bold]")
 
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
-    cache = FeedCache(ttl_seconds=settings.cache_ttl_seconds)
-    metadata_cache = LinkMetadataCache()
+    db = LinkgnomeDB()
+    # Schema is created lazily on first call to conn
+    _ = db.conn
 
     try:
-        posts = _fetch_all_posts(settings, cache, platform_filter, cutoff)
+        posts = _fetch_all_posts(settings, db, platform_filter, cutoff)
     except Exception as e:
         console.print(f"[red]Error fetching feeds: {e}[/red]")
         return
@@ -49,26 +49,23 @@ def run_tui(
 
     console.print(f"[dim]Fetched {len(posts)} posts, scoring links...[/dim]")
 
-    scored_links = asyncio.run(
-        score_links(posts, period_hours=hours, metadata_cache=metadata_cache)
-    )
+    scored_links = asyncio.run(score_links(posts, period_hours=hours, db=db))
 
     if not scored_links:
         console.print("[yellow]No links found in the specified time period.[/yellow]")
         return
 
-    metadata_cache.close()
-
+    db.close()
     _display_links_page(scored_links, page, settings.page_size)
 
 
 def _fetch_all_posts(
     settings: LinkgnomeSettings,
-    cache: FeedCache,
+    db: LinkgnomeDB,
     platform_filter: str | None = None,
     cutoff: datetime | None = None,
 ) -> list[Post]:
-    """Fetch posts from both platforms synchronously."""
+    """Fetch posts from both platforms."""
     posts: list[Post] = []
 
     mastodon_enabled = settings.mastodon.enabled and platform_filter in (
@@ -83,9 +80,9 @@ def _fetch_all_posts(
     async def _fetch_both():
         tasks = []
         if mastodon_enabled:
-            tasks.append(_fetch_mastodon_posts(settings, cache, cutoff))
+            tasks.append(_fetch_mastodon_posts(settings, db, cutoff))
         if bluesky_enabled:
-            tasks.append(_fetch_bluesky_posts(settings, cache, cutoff))
+            tasks.append(_fetch_bluesky_posts(settings, db, cutoff))
         results = await asyncio.gather(*tasks)
         for result_list in results:
             posts.extend(result_list)
@@ -96,29 +93,16 @@ def _fetch_all_posts(
 
 async def _fetch_mastodon_posts(
     settings: LinkgnomeSettings,
-    cache: FeedCache,
+    db: LinkgnomeDB,
     cutoff: datetime | None = None,
 ) -> list[Post]:
-    """Fetch posts from Mastodon with pagination and cutoff."""
-    cached = cache.get_feed("mastodon", "home")
-    if cached is not None:
-        return [
-            Post(
-                id=pd["id"],
-                platform=Platform.MASTODON,
-                author=pd["author"],
-                author_display_name=pd["author_display_name"],
-                content=pd["content"],
-                urls=pd["urls"],
-                created_at=datetime.fromisoformat(pd["created_at"]),
-                is_boost=pd["is_boost"],
-                original_post_id=pd.get("original_post_id"),
-                boosted_by=pd.get("boosted_by"),
-                boost_count=pd.get("boost_count", 0),
-                like_count=pd.get("like_count", 0),
-            )
-            for pd in cached
-        ]
+    """Fetch posts from Mastodon with pagination, save to DB."""
+    if cutoff:
+        recent_posts = db.load_posts(platform="mastodon", since=cutoff)
+        if recent_posts:
+            return recent_posts
+
+    db.clear_old_posts(keep_hours=24)
 
     fetcher = MastodonFetcher(
         instance_url=settings.mastodon.instance_url,
@@ -129,53 +113,21 @@ async def _fetch_mastodon_posts(
         timeline_type=TimelineType.HOME, cutoff=cutoff
     )
 
-    # Evict cache for future freshness
-    feed_data = [
-        {
-            "id": p.id,
-            "author": p.author,
-            "author_display_name": p.author_display_name,
-            "content": p.content,
-            "urls": p.urls,
-            "created_at": p.created_at.isoformat(),
-            "is_boost": p.is_boost,
-            "original_post_id": p.original_post_id,
-            "boosted_by": p.boosted_by,
-            "boost_count": p.boost_count,
-            "like_count": p.like_count,
-        }
-        for p in posts
-    ]
-    cache.set_feed("mastodon", "home", feed_data)
+    db.save_posts(posts)
 
     return posts
 
 
 async def _fetch_bluesky_posts(
     settings: LinkgnomeSettings,
-    cache: FeedCache,
+    db: LinkgnomeDB,
     cutoff: datetime | None = None,
 ) -> list[Post]:
-    """Fetch posts from Bluesky, checking cache first."""
-    cached = cache.get_feed("bluesky", "home")
-    if cached is not None:
-        return [
-            Post(
-                id=pd["id"],
-                platform=Platform.BLUESKY,
-                author=pd["author"],
-                author_display_name=pd["author_display_name"],
-                content=pd["content"],
-                urls=pd["urls"],
-                created_at=datetime.fromisoformat(pd["created_at"]),
-                is_boost=pd["is_boost"],
-                original_post_id=pd.get("original_post_id"),
-                boosted_by=pd.get("boosted_by"),
-                boost_count=pd.get("boost_count", 0),
-                like_count=pd.get("like_count", 0),
-            )
-            for pd in cached
-        ]
+    """Fetch posts from Bluesky, checking DB first."""
+    if cutoff:
+        recent_posts = db.load_posts(platform="bluesky", since=cutoff)
+        if recent_posts:
+            return recent_posts
 
     return []
 
@@ -185,7 +137,7 @@ def _display_links_page(
     page: int = 1,
     page_size: int = 42,
 ) -> None:
-    """Display a page of scored links as card rows."""
+    """Display a page of scored links as compact card rows."""
     start_idx = (page - 1) * page_size
     end_idx = start_idx + page_size
     page_links = scored_links[start_idx:end_idx]
@@ -201,65 +153,59 @@ def _display_links_page(
     total_pages = max(1, (len(scored_links) - 1) // page_size + 1)
 
     console.print("")
-    console.print(
-        f"[cyan bold]LinkGnome[/cyan bold] — "
-        f"Page [bold]{page}[/bold] of [bold]{total_pages}[/bold]"
-    )
+    console.print(f"[cyan bold]LinkGnome[/cyan bold] — Page {page} of {total_pages}")
     console.print(f"[dim]{'━' * console.width}[/dim]")
 
     for idx, link in enumerate(page_links, start=start_idx + 1):
-        platform_icons = _get_platform_icons(link)
-        score_str = f"⬆ {link.score:.1f}"
-        authors_str = _get_from_display(link)
-        details_str = f"{platform_icons}  {score_str}  by {authors_str}"
-
         text = Text()
-        text.append(str(idx), style="dim")
-        text.append("\n")
+
+        score_style = "bold yellow" if link.score >= 5.0 else "bold white"
+        platform_parts = _get_platform_parts(link)
+
+        text.append(f"{idx}.  ", style="dim")
+        for color, char in platform_parts:
+            text.append(f" {char} ", style=color)
+        text.append(f"⬆ {link.score:.1f}  ", style=score_style)
 
         if link.title and link.title != link.url:
-            text.append(link.title, style="bold")
-            text.append("\n")
-        text.append(_truncate_url(link.url, 120), style="italic underline link " + link.url)
-        text.append("\n\n")
-        text.append(details_str, style="dim")
+            text.append(f"{link.title}  ", style="bold")
 
-        card = Panel(
+        text.append(_truncate_url(link.url, 80), style="blue underline link " + link.url)
+        text.append("\n")
+        text.append(f"    by {_get_from_display(link)}", style="dim")
+
+        panel = Panel(
             text,
-            title=f"[dim]{idx}[/]",
-            style="white",
+            padding=(0, 1),
             border_style="dim",
             expand=True,
         )
-        console.print(card)
-        console.print("")
+        console.print(panel)
 
-    total_posts = sum(
-        link.post_count + link.boost_count + link.like_count for link in scored_links
-    )
     console.print(f"[dim]{'━' * console.width}[/dim]")
+    total_posts = sum(
+        link.post_count + link.boost_count + link.like_count
+        for link in scored_links
+    )
     console.print(
-        f"[dim]Total: {len(scored_links)} links | "
-        f"Engagements: {total_posts}[/dim]"
+        f"[dim]Total: {len(scored_links)} links | Engagements: {total_posts}[/dim]"
     )
     console.print("")
 
 
-def _get_platform_icons(scored_link: ScoredLink) -> str:
-    """Get platform icons for a scored link."""
+def _get_platform_parts(scored_link: ScoredLink) -> list[tuple[str, str]]:
+    """Get styled platform parts."""
+    parts = []
     if not scored_link.source_platforms:
-        return ""
-
-    icons = []
+        return parts
     if Platform.MASTODON in scored_link.source_platforms:
-        icons.append(PLATFORM_ICON[Platform.MASTODON])
+        parts.append(("magenta", "M"))
     if Platform.BLUESKY in scored_link.source_platforms:
-        icons.append(PLATFORM_ICON[Platform.BLUESKY])
+        parts.append(("blue", "B"))
+    return parts
 
-    return " ".join(icons)
 
-
-def _truncate_url(url: str, max_length: int = 120) -> str:
+def _truncate_url(url: str, max_length: int = 80) -> str:
     """Truncate a URL for display."""
     if len(url) <= max_length:
         return url

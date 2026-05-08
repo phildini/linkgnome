@@ -6,7 +6,8 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, urljoin, urlparse, urlunparse
 
 from linkgnome.fetchers.base import Post, ScoredLink
-from linkgnome.link_meta import LinkMetadataCache, fetch_all_titles
+from linkgnome.db import LinkgnomeDB
+from linkgnome.link_meta import fetch_all_titles
 
 
 
@@ -55,7 +56,7 @@ def _is_noise_url(url: str) -> bool:
 async def score_links(
     posts: list[Post],
     period_hours: int = 24,
-    metadata_cache: "LinkMetadataCache | None" = None,
+    db: "LinkgnomeDB | None" = None,
 ) -> list[ScoredLink]:
     """Score links from posts based on engagement."""
     cutoff = datetime.now(timezone.utc) - timedelta(hours=period_hours)
@@ -78,13 +79,13 @@ async def score_links(
     unique_urls = list(link_groups.keys())
 
     titles: dict[str, str | None] = {}
-    if metadata_cache and unique_urls:
-        titles = await fetch_all_titles(unique_urls, metadata_cache)
+    if db and unique_urls:
+        titles = await fetch_all_titles(unique_urls, db)
 
     scored_links = []
     for canonical_url, posts_group in link_groups.items():
-        if titles.get(canonical_url) is None and metadata_cache is not None:
-            cached = metadata_cache.get(canonical_url)
+        if titles.get(canonical_url) is None and db is not None:
+            cached = db.get_url_metadata(canonical_url)
             if cached and cached["status_code"] >= 400:
                 continue
 

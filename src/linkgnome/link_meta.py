@@ -4,44 +4,15 @@ from __future__ import annotations
 
 import asyncio
 import re
-from pathlib import Path
-from typing import Any
 
 import httpx
-from diskcache import Cache
 
-
-class LinkMetadataCache:
-    """Cache for URL metadata (titles, status codes)."""
-
-    def __init__(self, cache_dir: Path | None = None, ttl_seconds: int = 86400):
-        self.cache_dir = cache_dir or (
-            Path.home() / ".cache" / "linkgnome" / "metadata"
-        )
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-        self.ttl_seconds = ttl_seconds
-        self._cache = Cache(str(self.cache_dir))
-
-    def get(self, url: str) -> dict[str, Any] | None:
-        return self._cache.get(url)
-
-    def set(self, url: str, title: str | None, status_code: int) -> None:
-        self._cache.set(
-            url,
-            {"title": title, "status_code": status_code},
-            expire=self.ttl_seconds,
-        )
-
-    def clear(self) -> None:
-        self._cache.clear()
-
-    def close(self) -> None:
-        self._cache.close()
+from linkgnome.db import LinkgnomeDB
 
 
 async def fetch_all_titles(
     urls: list[str],
-    cache: LinkMetadataCache,
+    db: LinkgnomeDB,
     timeout: float = 5.0,
     max_concurrent: int = 8,
 ) -> dict[str, str | None]:
@@ -53,7 +24,7 @@ async def fetch_all_titles(
 
     async def fetch_one(url: str) -> tuple[str, str | None]:
         async with semaphore:
-            cached = cache.get(url)
+            cached = db.get_url_metadata(url)
             if cached is not None:
                 if cached["status_code"] >= 400:
                     return (url, None)
@@ -69,28 +40,25 @@ async def fetch_all_titles(
                 ) as client:
                     response = await client.get(url, headers=headers)
 
-                    if response.status_code >= 400:
-                        cache.set(url, None, response.status_code)
-                        return (url, None)
-
+                    fetch_url = url
                     if response.status_code in (301, 302, 303, 307, 308):
                         new_url = response.headers.get("location")
                         if new_url:
-                            url = new_url
+                            fetch_url = new_url
                     else:
                         content_type = response.headers.get("content-type", "")
                         if "text/html" not in content_type:
-                            cache.set(url, url, response.status_code)
-                            return (url, url)
+                            db.save_url_metadata(url, url, response.status_code)
+                            return (fetch_url, url)
 
                         html = response.text
                         title = _extract_title(html)
-                        result = title if title else url
-                        cache.set(url, result, response.status_code)
-                        return (url, result)
+                        result = title or url
+                        db.save_url_metadata(url, result, response.status_code)
+                        return (fetch_url, result)
 
             except Exception:
-                cache.set(url, None, 0)
+                db.save_url_metadata(url, None, 0)
                 return (url, None)
 
     tasks = [fetch_one(url) for url in urls]
