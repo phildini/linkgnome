@@ -30,7 +30,10 @@ def setup(ctx: click.Context) -> None:
 
 @main.command()
 @click.option("--period", type=str, default=None, help="Time period (e.g., 24h, 7d)")
-@click.option("--page", type=int, default=1, help="Page number (42 items per page)")
+@click.option("--page", type=int, default=1, help="Page number (10 items per page)")
+@click.option(
+    "--limit", type=int, default=None, help="Number of links per page (default: 10)"
+)
 @click.option(
     "--platform",
     type=click.Choice(["mastodon", "bluesky"]),
@@ -39,7 +42,7 @@ def setup(ctx: click.Context) -> None:
 )
 @click.pass_context
 def fetch(
-    ctx: click.Context, period: str | None, page: int, platform: str | None
+    ctx: click.Context, period: str | None, page: int, limit: int | None, platform: str | None
 ) -> None:
     """Fetch and display ranked links from your feeds."""
     config_manager = ctx.obj["config_manager"]
@@ -52,7 +55,8 @@ def fetch(
         raise click.Abort()
 
     hours = _parse_period(period) if period else settings.period_hours
-    run_tui(settings, hours=hours, page=page, platform_filter=platform)
+    page_size = limit or 10
+    run_tui(settings, hours=hours, page=page, page_size=page_size, platform_filter=platform)
 
 
 @main.command()

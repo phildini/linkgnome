@@ -63,32 +63,50 @@ class BlueskyFetcher(BaseFetcher):
         timeline_type: TimelineType = TimelineType.HOME,
         max_id: str | None = None,
         limit: int = 40,
+        cutoff: datetime | None = None,
     ) -> list[Post]:
         """Fetch posts from the specified timeline."""
         if not self.access_jwt:
             await self.authenticate()
 
-        async with httpx.AsyncClient(
-            base_url=self.BSKY_API,
-            timeout=30.0,
-        ) as client:
-            params: dict[str, Any] = {"limit": limit}
-            if max_id:
-                params["cursor"] = max_id
-
-            response = await client.get(
-                "/xrpc/app.bsky.feed.getTimeline",
-                headers=await self._get_auth_headers(),
-                params=params,
-            )
-            response.raise_for_status()
-            data = response.json()
-
         posts = []
-        for item in data.get("feed", []):
-            post = await self._parse_feed_item(item)
-            if post is not None:
+        cursor = max_id
+        page_count = 0
+        max_pages = 10
+
+        while page_count < max_pages:
+            page_count += 1
+            async with httpx.AsyncClient(
+                base_url=self.BSKY_API,
+                timeout=30.0,
+            ) as client:
+                params: dict[str, Any] = {"limit": limit}
+                if cursor:
+                    params["cursor"] = cursor
+
+                response = await client.get(
+                    "/xrpc/app.bsky.feed.getTimeline",
+                    headers=await self._get_auth_headers(),
+                    params=params,
+                )
+                response.raise_for_status()
+                data = response.json()
+
+            feed = data.get("feed", [])
+            if not feed:
+                break
+
+            for item in feed:
+                post = await self._parse_feed_item(item)
+                if post is None:
+                    continue
+                if cutoff and post.created_at < cutoff:
+                    continue
                 posts.append(post)
+
+            cursor = data.get("cursor")
+            if not cursor:
+                break
 
         return posts
 

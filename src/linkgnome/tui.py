@@ -12,6 +12,7 @@ from rich.text import Text
 from linkgnome.db import LinkgnomeDB
 from linkgnome.config import LinkgnomeSettings
 from linkgnome.fetchers.base import Platform, Post, TimelineType
+from linkgnome.fetchers.bluesky import BlueskyFetcher
 from linkgnome.fetchers.mastodon import MastodonFetcher
 from linkgnome.scorer import ScoredLink, score_links
 
@@ -27,6 +28,7 @@ def run_tui(
     settings: LinkgnomeSettings,
     hours: int = 24,
     page: int = 1,
+    page_size: int = 10,
     platform_filter: str | None = None,
 ) -> None:
     """Run the terminal UI to display ranked links."""
@@ -56,7 +58,7 @@ def run_tui(
         return
 
     db.close()
-    _display_links_page(scored_links, page, settings.page_size)
+    _display_links_page(scored_links, page, page_size)
 
 
 def _fetch_all_posts(
@@ -129,7 +131,21 @@ async def _fetch_bluesky_posts(
         if recent_posts:
             return recent_posts
 
-    return []
+    db.clear_old_posts(keep_hours=24)
+
+    fetcher = BlueskyFetcher(
+        handle=settings.bluesky.handle,
+        app_password=settings.bluesky.app_password,
+    )
+
+    await fetcher.authenticate()
+
+    posts = await fetcher.fetch_timeline(
+        timeline_type=TimelineType.HOME, cutoff=cutoff
+    )
+
+    db.save_posts(posts)
+    return posts
 
 
 def _display_links_page(
