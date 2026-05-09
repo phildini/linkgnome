@@ -182,3 +182,94 @@ class TestBlueskyFetcher:
         result = await fetcher.verify_credentials()
 
         assert result["handle"] == "user.bsky.social"
+
+    def test_extract_urls_from_post_with_facets(self):
+        """Test that facet URLs are used when present."""
+        import asyncio
+
+        fetcher = BlueskyFetcher("user.bsky.social", "password")
+        post_data = {
+            "record": {
+                "text": "Check out (https://broken-url.com) for more",
+                "facets": [
+                    {
+                        "features": [
+                            {
+                                "$type": "app.bsky.richtext.facet#link",
+                                "uri": "https://correct-url.com/article",
+                            }
+                        ]
+                    }
+                ],
+            }
+        }
+
+        urls = asyncio.run(fetcher.extract_urls_from_post(post_data))
+
+        assert urls == ["https://correct-url.com/article"]
+
+    def test_extract_urls_from_post_fallback_to_text(self):
+        """Test that text extraction is used as fallback when no facets."""
+        import asyncio
+
+        fetcher = BlueskyFetcher("user.bsky.social", "password")
+        post_data = {
+            "record": {
+                "text": "Check out https://example.com/article for more",
+                "facets": [],
+            }
+        }
+
+        urls = asyncio.run(fetcher.extract_urls_from_post(post_data))
+
+        assert "https://example.com/article" in urls
+
+    def test_extract_urls_from_post_no_facets_key(self):
+        """Test fallback when facets key is missing entirely."""
+        import asyncio
+
+        fetcher = BlueskyFetcher("user.bsky.social", "password")
+        post_data = {
+            "record": {
+                "text": "Check out https://example.com/article for more",
+            }
+        }
+
+        urls = asyncio.run(fetcher.extract_urls_from_post(post_data))
+
+        assert "https://example.com/article" in urls
+
+    def test_extract_urls_from_post_multiple_facets(self):
+        """Test extracting multiple facet URLs."""
+        import asyncio
+
+        fetcher = BlueskyFetcher("user.bsky.social", "password")
+        post_data = {
+            "record": {
+                "text": "Links here",
+                "facets": [
+                    {
+                        "features": [
+                            {
+                                "$type": "app.bsky.richtext.facet#link",
+                                "uri": "https://first.com",
+                            }
+                        ]
+                    },
+                    {
+                        "features": [
+                            {
+                                "$type": "app.bsky.richtext.facet#link",
+                                "uri": "https://second.com/path",
+                            }
+                        ]
+                    },
+                ],
+            }
+        }
+
+        urls = asyncio.run(fetcher.extract_urls_from_post(post_data))
+
+        assert len(urls) == 2
+        assert "https://first.com" in urls
+        assert "https://second.com/path" in urls

@@ -5,7 +5,9 @@ from __future__ import annotations
 import click
 from rich.console import Console
 
+from linkgnome.cache import FeedCache
 from linkgnome.config import ConfigManager
+from linkgnome.db import LinkgnomeDB
 from linkgnome.setup import run_setup
 from linkgnome.tui import run_tui
 
@@ -85,6 +87,26 @@ def config(ctx: click.Context) -> None:
     console.print("\n[bold]Settings:[/bold]")
     console.print(f"  Period: {settings.period_hours} hours")
     console.print(f"  Page size: {settings.page_size} items")
+
+
+@main.command()
+@click.pass_context
+def clear_cache(ctx: click.Context) -> None:
+    """Clear all cached data."""
+    console = Console()
+    
+    # Clear FeedCache
+    feed_cache = FeedCache()
+    feed_cache.clear()
+    feed_cache.close()
+    
+    # Clear database old posts
+    db = LinkgnomeDB()
+    deleted_count = db.clear_old_posts(0)  # Clear all posts
+    db.close()
+    
+    console.print("[green]Cache cleared successfully![/green]")
+    console.print(f"[yellow]Removed {deleted_count} old posts from database[/yellow]")
 
 
 def _parse_period(period_str: str) -> int:

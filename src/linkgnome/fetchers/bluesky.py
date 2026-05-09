@@ -112,36 +112,21 @@ class BlueskyFetcher(BaseFetcher):
 
     async def extract_urls_from_post(self, post_data: dict[str, Any]) -> list[str]:
         """Extract URLs from a Bluesky post."""
-        urls = []
-
         record = post_data.get("record", {})
-        text = record.get("text", "")
         facets = record.get("facets", [])
 
+        facet_urls = []
         for facet in facets:
             for feature in facet.get("features", []):
                 if feature.get("$type") == "app.bsky.richtext.facet#link":
                     uri = feature.get("uri", "")
                     if uri:
-                        urls.append(uri)
+                        facet_urls.append(uri)
 
-        urls.extend(self.extract_urls_from_content(text))
+        if facet_urls:
+            return facet_urls
 
-        embed = post_data.get("embed", {})
-        if embed:
-            embed_type = embed.get("$type", "")
-            if embed_type == "app.bsky.embed.external#view":
-                external = embed.get("external", {})
-                if external and external.get("uri"):
-                    urls.append(external["uri"])
-            elif embed_type == "app.bsky.embed.recordWithMedia#view":
-                media = embed.get("media", {})
-                if media:
-                    external = media.get("external", {})
-                    if external and external.get("uri"):
-                        urls.append(external["uri"])
-
-        return list(set(urls))
+        return self.extract_urls_from_content(record.get("text", ""))
 
     def get_platform(self) -> Platform:
         """Return the platform this fetcher supports."""

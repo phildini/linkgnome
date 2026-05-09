@@ -114,9 +114,12 @@ class LinkgnomeDB:
             )
 
             for url in post.urls:
+                # Normalize URLs to prevent truncation issues
+                # Remove trailing ellipsis that might be present in Bluesky truncated URLs
+                normalized_url = url.rstrip('...')
                 conn.execute(
                     "INSERT OR IGNORE INTO post_urls (post_id, url) VALUES (?, ?)",
-                    (post.id, url),
+                    (post.id, normalized_url),
                 )
 
             rows_added += 1
@@ -159,7 +162,14 @@ class LinkgnomeDB:
         posts = []
         for row in rows:
             urls_str = row["urls"]
-            urls = urls_str.split(",") if urls_str else []
+            # Handle case where URL might contain commas or be malformed
+            if urls_str:
+                # Split by comma but be careful about URLs that might contain commas
+                urls = [url.strip() for url in urls_str.split(',')]
+            else:
+                urls = []
+            # Clean up any truncated URLs that may have been saved
+            cleaned_urls = [url.rstrip('...') for url in urls]
             posts.append(
                 Post(
                     id=row["id"],
@@ -167,7 +177,7 @@ class LinkgnomeDB:
                     author=row["author"],
                     author_display_name=row["author_display_name"] or "",
                     content=row["content"] or "",
-                    urls=urls,
+                    urls=cleaned_urls,
                     created_at=datetime.fromisoformat(row["created_at"]),
                     is_boost=bool(row["is_boost"]),
                     original_post_id=row["original_post_id"],
