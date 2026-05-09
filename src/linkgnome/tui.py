@@ -189,6 +189,10 @@ def _display_links_page(
         text.append(link.url, style="blue underline link " + link.url)
         text.append("\n")
         text.append(f"    by {_get_from_display(link)}", style="dim")
+        post_url = _get_post_url(link)
+        if post_url:
+            text.append(" · ", style="dim")
+            text.append(post_url, style="blue underline link " + post_url)
 
         panel = Panel(
             text,
@@ -240,3 +244,45 @@ def _get_from_display(scored_link: ScoredLink, max_length: int = 80) -> str:
         from_str = from_str[: max_length - 3] + "..."
 
     return from_str if from_str else "—"
+
+def _get_post_url(scored_link: ScoredLink) -> str:
+    """Get a displayable URL for the first post that shared this link."""
+    if not scored_link.posts:
+        return ""
+    first_post = scored_link.posts[0]
+    if not first_post.raw_data:
+        return _construct_post_url_fallback(first_post)
+    if first_post.platform == Platform.MASTODON:
+        return first_post.raw_data.get("url") or first_post.raw_data.get("uri") or ""
+    if first_post.platform == Platform.BLUESKY:
+        return _bluesky_post_to_url(first_post.raw_data)
+    return ""
+
+def _construct_post_url_fallback(post: Post) -> str:
+    """Construct post URL when raw_data is unavailable."""
+    if post.platform == Platform.BLUESKY and post.id.startswith("at://"):
+        return _bluesky_at_uri_to_url(post.id)
+    return post.id
+
+def _bluesky_post_to_url(raw_data: dict) -> str:
+    """Convert Bluesky post raw data to bsky.app URL."""
+    post = raw_data.get("post", {})
+    uri = post.get("uri", "")
+    author = post.get("author", {})
+    handle = author.get("handle", "")
+    if handle:
+        parts = uri.split("/")
+        rkey = parts[-1] if parts else ""
+        return f"https://bsky.app/profile/{handle}/post/{rkey}"
+    return _bluesky_at_uri_to_url(uri)
+
+def _bluesky_at_uri_to_url(at_uri: str) -> str:
+    """Convert Bluesky AT URI to bsky.app URL."""
+    if not at_uri.startswith("at://"):
+        return at_uri
+    parts = at_uri[5:].split("/")
+    if len(parts) >= 3 and parts[1] == "app.bsky.feed.post":
+        did = parts[0]
+        rkey = parts[2]
+        return f"https://bsky.app/profile/{did}/post/{rkey}"
+    return at_uri
