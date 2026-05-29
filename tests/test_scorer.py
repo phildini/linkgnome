@@ -112,7 +112,7 @@ class TestScoreLinks:
         scored = _run_sync(score_links, posts, period_hours=24)
 
         assert len(scored) == 1
-        assert scored[0].score == 1.0
+        assert 0.9 < scored[0].score < 1.0
         assert scored[0].post_count == 1
 
     def test_sorting_by_score(self):

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import html
 import re
 
 import httpx
@@ -76,12 +77,13 @@ async def fetch_all_titles(
     return metadata
 
 
-def _extract_title(html: str) -> str | None:
+def _extract_title(html_content: str) -> str | None:
     """Extract <title> from HTML, stripping tags and whitespace."""
     match = re.search(
-        r"<title[^>]*>(.*?)</title>", html, re.IGNORECASE | re.DOTALL
+        r"<title[^>]*>(.*?)</title>", html_content, re.IGNORECASE | re.DOTALL
     )
     if match:
         title = match.group(1).strip()
+        title = html.unescape(title)
         return title if title else None
     return None

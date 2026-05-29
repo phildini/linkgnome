@@ -36,8 +36,8 @@ def run_tui(
 
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
     db = LinkgnomeDB()
-    # Schema is created lazily on first call to conn
     _ = db.conn
+    db.clear_old_posts(keep_hours=hours)
 
     try:
         posts = _fetch_all_posts(settings, db, platform_filter, cutoff)
@@ -54,7 +54,17 @@ def run_tui(
     scored_links = asyncio.run(score_links(posts, period_hours=hours, db=db))
 
     if not scored_links:
-        console.print("[yellow]No links found in the specified time period.[/yellow]")
+        total_with_urls = sum(1 for p in posts if p.urls)
+        if total_with_urls > 0:
+            console.print(
+                f"[yellow]No links scored in the specified time period. "
+                f"({total_with_urls} posts had URLs, but they may have been filtered or scored 0)[/yellow]"
+            )
+        else:
+            console.print(
+                f"[yellow]Fetched {len(posts)} posts, but none contained external "
+                f"links worth scoring. Try a longer time period.[/yellow]"
+            )
         return
 
     db.close()
@@ -99,12 +109,6 @@ async def _fetch_mastodon_posts(
     cutoff: datetime | None = None,
 ) -> list[Post]:
     """Fetch posts from Mastodon with pagination, save to DB."""
-    if cutoff:
-        recent_posts = db.load_posts(platform="mastodon", since=cutoff)
-        if recent_posts:
-            return recent_posts
-
-    db.clear_old_posts(keep_hours=24)
 
     fetcher = MastodonFetcher(
         instance_url=settings.mastodon.instance_url,
@@ -125,13 +129,7 @@ async def _fetch_bluesky_posts(
     db: LinkgnomeDB,
     cutoff: datetime | None = None,
 ) -> list[Post]:
-    """Fetch posts from Bluesky, checking DB first."""
-    if cutoff:
-        recent_posts = db.load_posts(platform="bluesky", since=cutoff)
-        if recent_posts:
-            return recent_posts
-
-    db.clear_old_posts(keep_hours=24)
+    """Fetch posts from Bluesky with pagination, save to DB."""
 
     fetcher = BlueskyFetcher(
         handle=settings.bluesky.handle,

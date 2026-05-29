@@ -63,13 +63,23 @@ async def score_links(
 
     filtered_posts = [post for post in posts if post.created_at >= cutoff]
 
+    # Resolve all URLs through redirects once, for dedup
+    all_raw_urls = list(set(
+        url for post in filtered_posts for url in post.urls if not _is_noise_url(url)
+    ))
+    resolved_urls: dict[str, str] = {}
+    for url in all_raw_urls:
+        resolved = await follow_redirects(url, db)
+        resolved_urls[url] = resolved
+
     link_groups: dict[str, list[Post]] = {}
 
     for post in filtered_posts:
         for url in post.urls:
             if _is_noise_url(url):
                 continue
-            canonical = normalize_url(url)
+            final_url = resolved_urls.get(url, url)
+            canonical = normalize_url(final_url)
             if canonical is None:
                 continue
             if canonical not in link_groups:
@@ -93,7 +103,11 @@ async def score_links(
         boost_count = sum(1 for p in posts_group if p.is_boost)
         like_count = sum(p.like_count for p in posts_group)
 
-        score = original_count * 1.0 + boost_count * 0.5 + like_count * 0.25
+        newest_post = max(posts_group, key=lambda p: p.created_at)
+        age_hours = max(0, (datetime.now(timezone.utc) - newest_post.created_at).total_seconds() / 3600)
+        decay = 1 - 0.5 * (age_hours / period_hours)
+
+        score = (original_count * 1.0 + boost_count * 0.5 + like_count * 0.25) * decay
 
         if score > 0:
             source_urls = set()
@@ -188,6 +202,7 @@ def normalize_url(url: str) -> str | None:
             "ref",
             "source",
             "si",
+            "amp",
         }
         query_params = {
             k: v for k, v in query_params.items() if k.lower() not in tracking_params
@@ -209,19 +224,23 @@ def normalize_url(url: str) -> str | None:
         return None
 
 
-def follow_redirects(url: str, max_redirects: int = 4) -> str:
-    """Follow HTTP redirects to get the canonical URL."""
+async def follow_redirects(url: str, db: LinkgnomeDB | None = None, max_redirects: int = 4) -> str:
+    """Follow HTTP redirects to get the canonical URL, using DB cache."""
+    if db is not None:
+        cached = db.get_url_metadata(url)
+        if cached and cached.get("final_url"):
+            return cached["final_url"]
+
     import httpx
 
     try:
-        with httpx.Client(
-            follow_redirects=False,
+        async with httpx.AsyncClient(
             timeout=10.0,
             http2=True,
         ) as client:
             current_url = url
             for _ in range(max_redirects):
-                response = client.head(
+                response = await client.head(
                     current_url,
                     follow_redirects=False,
                 )
@@ -233,6 +252,8 @@ def follow_redirects(url: str, max_redirects: int = 4) -> str:
                         break
                 else:
                     break
+            if current_url != url and db is not None:
+                db.save_url_metadata(url, None, 0, final_url=current_url)
             return current_url
     except Exception:
         return url

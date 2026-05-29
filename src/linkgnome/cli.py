@@ -5,7 +5,6 @@ from __future__ import annotations
 import click
 from rich.console import Console
 
-from linkgnome.cache import FeedCache
 from linkgnome.config import ConfigManager
 from linkgnome.db import LinkgnomeDB
 from linkgnome.setup import run_setup
@@ -93,14 +92,6 @@ def config(ctx: click.Context) -> None:
 @click.pass_context
 def clear_cache(ctx: click.Context) -> None:
     """Clear all cached data."""
-    console = Console()
-    
-    # Clear FeedCache
-    feed_cache = FeedCache()
-    feed_cache.clear()
-    feed_cache.close()
-    
-    # Clear database old posts
     db = LinkgnomeDB()
     deleted_count = db.clear_old_posts(0)  # Clear all posts
     db.close()
