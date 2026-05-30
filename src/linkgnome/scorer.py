@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from urllib.parse import parse_qs, urljoin, urlparse, urlunparse
+from urllib.parse import parse_qs, urlparse, urlunparse
 
 from linkgnome.fetchers.base import Post, ScoredLink
 from linkgnome.db import LinkgnomeDB
@@ -100,23 +100,13 @@ async def score_links(
 
     filtered_posts = [post for post in posts if post.created_at >= cutoff]
 
-    # Resolve all URLs through redirects once, for dedup
-    all_raw_urls = list(set(
-        url for post in filtered_posts for url in post.urls if not _is_noise_url(url)
-    ))
-    resolved_urls: dict[str, str] = {}
-    for url in all_raw_urls:
-        resolved = await follow_redirects(url, db)
-        resolved_urls[url] = resolved
-
     link_groups: dict[str, list[Post]] = {}
 
     for post in filtered_posts:
         for url in post.urls:
             if _is_noise_url(url):
                 continue
-            final_url = resolved_urls.get(url, url)
-            canonical = normalize_url(final_url)
+            canonical = normalize_url(url)
             if canonical is None:
                 continue
             if canonical not in link_groups:
@@ -170,6 +160,10 @@ async def score_links(
 
     scored_links.sort(key=lambda x: x.score, reverse=True)
     scored_links = _platform_normalize_scores(scored_links)
+
+    if db:
+        scored_links = _merge_redirect_duplicates(scored_links, db)
+
     return scored_links
 
 
@@ -262,36 +256,51 @@ def normalize_url(url: str) -> str | None:
         return None
 
 
-async def follow_redirects(url: str, db: LinkgnomeDB | None = None, max_redirects: int = 4) -> str:
-    """Follow HTTP redirects to get the canonical URL, using DB cache."""
-    if db is not None:
-        cached = db.get_url_metadata(url)
-        if cached and cached.get("final_url"):
-            return cached["final_url"]
+def _merge_redirect_duplicates(
+    scored_links: list[ScoredLink], db: LinkgnomeDB
+) -> list[ScoredLink]:
+    """Merge scored links that redirect to the same final URL.
 
-    import httpx
+    After title fetching, check each link's final_url from the DB cache.
+    If two links resolve to the same canoncial URL, merge their engagement.
+    """
+    redirect_map: dict[str, str] = {}
+    for link in scored_links:
+        meta = db.get_url_metadata(link.url)
+        if meta and meta.get("final_url"):
+            final_canonical = normalize_url(meta["final_url"])
+            if final_canonical and final_canonical != link.url:
+                redirect_map[link.url] = final_canonical
 
-    try:
-        async with httpx.AsyncClient(
-            timeout=10.0,
-            http2=True,
-        ) as client:
-            current_url = url
-            for _ in range(max_redirects):
-                response = await client.head(
-                    current_url,
-                    follow_redirects=False,
+    if not redirect_map:
+        return scored_links
+
+    merged: dict[str, ScoredLink] = {}
+    for link in scored_links:
+        target = redirect_map.get(link.url, link.url)
+        existing = merged.get(target)
+        if existing:
+            existing.score = round(existing.score + link.score, 2)
+            existing.post_count += link.post_count
+            existing.boost_count += link.boost_count
+            existing.like_count += link.like_count
+        else:
+            if target != link.url:
+                existing = ScoredLink(
+                    url=target,
+                    canonical_url=target,
+                    score=link.score,
+                    post_count=link.post_count,
+                    boost_count=link.boost_count,
+                    like_count=link.like_count,
+                    posts=link.posts,
+                    source_platforms=link.source_platforms,
+                    title=link.title,
                 )
-                if response.status_code in (301, 302, 303, 307, 308):
-                    location = response.headers.get("location")
-                    if location:
-                        current_url = urljoin(current_url, location)
-                    else:
-                        break
-                else:
-                    break
-            if current_url != url and db is not None:
-                db.save_url_metadata(url, None, 0, final_url=current_url)
-            return current_url
-    except Exception:
-        return url
+                merged[target] = existing
+            else:
+                merged[target] = link
+
+    result = list(merged.values())
+    result.sort(key=lambda x: x.score, reverse=True)
+    return result
