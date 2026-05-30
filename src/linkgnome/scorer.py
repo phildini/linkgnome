@@ -11,6 +11,43 @@ from linkgnome.link_meta import fetch_all_titles
 
 
 
+def _platform_normalize_scores(scored_links: list[ScoredLink]) -> list[ScoredLink]:
+    """Normalize scores across platforms so no single platform dominates.
+
+    Computes the median score for each platform, then lifts lower-median
+    platforms so all platforms share the same median score.
+    """
+    platform_scores: dict[Platform, list[float]] = {}
+    for link in scored_links:
+        for p in link.source_platforms or []:
+            platform_scores.setdefault(p, []).append(link.score)
+
+    if len(platform_scores) < 2:
+        return scored_links
+
+    medians: dict[Platform, float] = {}
+    for p, scores in platform_scores.items():
+        sorted_scores = sorted(scores)
+        mid = len(sorted_scores) // 2
+        if len(sorted_scores) % 2 == 0:
+            medians[p] = (sorted_scores[mid - 1] + sorted_scores[mid]) / 2
+        else:
+            medians[p] = sorted_scores[mid]
+
+    max_median = max(medians.values())
+    lift_factors: dict[Platform, float] = {}
+    for p, median in medians.items():
+        lift_factors[p] = max_median / median if median > 0 else 1.0
+
+    for link in scored_links:
+        if link.source_platforms:
+            factors = [lift_factors.get(p, 1.0) for p in link.source_platforms]
+            link.score = round(link.score * sum(factors) / len(factors), 2)
+
+    scored_links.sort(key=lambda x: x.score, reverse=True)
+    return scored_links
+
+
 def _is_noise_url(url: str) -> bool:
     """Check if URL is a noise/internal link that shouldn't be scored."""
     url_lower = url.lower()
@@ -132,6 +169,7 @@ async def score_links(
             scored_links.append(scored_link)
 
     scored_links.sort(key=lambda x: x.score, reverse=True)
+    scored_links = _platform_normalize_scores(scored_links)
     return scored_links
 
 
