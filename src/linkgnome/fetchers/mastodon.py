@@ -45,14 +45,14 @@ class MastodonFetcher(BaseFetcher):
             )
         return self.client
 
-    async def register_app(self) -> dict[str, str]:
+    async def register_app(self, redirect_uris: str | None = None) -> dict[str, str]:
         """Register an OAuth application with the Mastodon instance."""
         client = await self._get_client()
         response = await client.post(
             "/api/v1/apps",
             data={
                 "client_name": "LinkGnome",
-                "redirect_uris": "urn:ietf:wg:oauth:2.0:oob",
+                "redirect_uris": redirect_uris or "urn:ietf:wg:oauth:2.0:oob",
                 "scopes": "read:statuses read:notifications",
                 "website": "https://github.com/phildini/linkgnome",
             },

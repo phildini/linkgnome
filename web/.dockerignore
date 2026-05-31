@@ -1,0 +1,8 @@
+node_modules
+__pycache__
+*.pyc
+data/
+staticfiles/
+static/css/output.css
+.env
+.git

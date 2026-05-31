@@ -1,0 +1,40 @@
+app = "linkgnome"
+primary_region = "iad"
+
+[build]
+  dockerfile = "web/Dockerfile"
+
+[mounts]
+  source = "linkgnome_data"
+  destination = "/data"
+
+[env]
+  DJANGO_SECRET_KEY = "change-me-in-production"
+  DJANGO_DEBUG = "False"
+  ALLOWED_HOSTS = "linkgnome.fly.dev,localhost"
+  CSRF_TRUSTED_ORIGINS = "https://linkgnome.fly.dev"
+  DATA_DIR = "/data"
+
+[[services]]
+  internal_port = 8000
+  processes = ["web"]
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+    force_https = true
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 10
+
+  [[services.http_checks]]
+    interval = "30s"
+    timeout = "5s"
+    path = "/"
+    method = "GET"

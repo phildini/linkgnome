@@ -1,0 +1,18 @@
+{% if can_refresh %}
+  <button class="btn btn-primary btn-sm"
+          hx-post="{% url 'feeds:refresh_feeds' %}"
+          hx-target="#refresh-area"
+          hx-swap="outerHTML">
+    Refresh
+  </button>
+{% else %}
+  <button class="btn btn-ghost btn-sm"
+          hx-get="{% url 'feeds:refresh_button' %}"
+          hx-target="#refresh-area"
+          hx-swap="outerHTML"
+          hx-trigger="every 5s"
+          disabled>
+    <span class="loading loading-spinner loading-xs"></span>
+    {{ cooldown_remaining }}s
+  </button>
+{% endif %}
