@@ -12,8 +12,12 @@ from django.utils import timezone
 from django.conf import settings
 from django_ratelimit.decorators import ratelimit
 
+import logging
+
 from accounts.forms import SignupForm, LoginForm, InstanceUrlForm, BlueskyConnectForm
 from accounts.models import User, MastodonAccount, BlueskyAccount
+
+logger = logging.getLogger(__name__)
 
 
 signer = TimestampSigner()
@@ -118,8 +122,9 @@ def connect_mastodon(request):
                 app = asyncio.run(
                     register_instance_app(instance_url, callback_url)
                 )
-            except Exception:
-                form.add_error("instance_url", "Failed to register with this instance.")
+            except Exception as e:
+                logger.exception("Failed to register app with %s", instance_url)
+                form.add_error("instance_url", f"Failed to register with this instance: {e}")
                 return render(request, "accounts/connect_mastodon.html", {"form": form})
 
             auth_url = build_authorize_url(
@@ -161,9 +166,11 @@ def mastodon_callback(request):
         identity = asyncio.run(
             fetch_identity(state["instance_url"], token_data["access_token"])
         )
-    except Exception:
+    except Exception as e:
+        logger.exception("Mastodon OAuth callback failed")
         return render(request, "accounts/connect_failed.html", {
             "platform": "Mastodon",
+            "error": str(e),
         })
 
     MastodonAccount.objects.update_or_create(
@@ -194,9 +201,13 @@ def connect_bluesky(request):
             app_password = form.cleaned_data["app_password"]
             try:
                 session = asyncio.run(verify_credentials(handle, app_password))
-            except Exception:
-                form.add_error(None, "Invalid handle or app password.")
-                return render(request, "accounts/connect_bluesky.html", {"form": form})
+        except Exception as e:
+            logger.exception("Bluesky verification failed")
+            form.add_error(None, f"Verification failed: {e}")
+            return render(request, "accounts/connect_bluesky.html", {"form": form})
+
+    return render(request, "accounts/connect_bluesky.html", {"form": form})
+
 
             BlueskyAccount.objects.update_or_create(
                 user=request.user,
