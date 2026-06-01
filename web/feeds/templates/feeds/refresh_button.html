@@ -1,7 +1,7 @@
 {% if can_refresh %}
   <button class="btn btn-primary btn-sm"{% if swap_oob %} hx-swap-oob="true"{% endif %}
           hx-post="{% url 'feeds:refresh_feeds' %}"
-          hx-target="#feed-table"
+          hx-target="#refresh-area"
           hx-swap="outerHTML">
     Refresh
   </button>
