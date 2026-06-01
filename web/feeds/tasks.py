@@ -79,9 +79,14 @@ async def _fetch_user_feeds_async(user_id: int) -> None:
 
 async def _store_scored_links(user, scored_links) -> None:
     """Bulk replace scored links for a user."""
-    async with transaction.atomic():
-        await ScoredLink.objects.filter(user=user).adelete()
-        await ScoredLink.objects.abulk_create([
+    await sync_to_async(_store_scored_links_sync)(user, scored_links)
+
+
+def _store_scored_links_sync(user, scored_links) -> None:
+    """Synchronous version of _store_scored_links."""
+    with transaction.atomic():
+        ScoredLink.objects.filter(user=user).delete()
+        ScoredLink.objects.bulk_create([
             ScoredLink(
                 user=user,
                 url=link.url,
@@ -102,5 +107,4 @@ async def _store_scored_links(user, scored_links) -> None:
             )
             for link in scored_links
         ])
-    username = await sync_to_async(getattr)(user, "username", str(user.id))
-    logger.info("Stored %d scored links for %s", len(scored_links), username)
+    logger.info("Stored %d scored links for %s", len(scored_links), user.username)
