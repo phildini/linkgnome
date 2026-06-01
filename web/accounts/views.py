@@ -21,6 +21,7 @@ from accounts.forms import (
 )
 from accounts.mastodon import (
     build_authorize_url,
+    clear_instance_cache,
     exchange_code,
     register_instance_app,
 )
@@ -122,6 +123,7 @@ def connect_mastodon(request):
         form = InstanceUrlForm(request.POST)
         if form.is_valid():
             instance_url = form.cleaned_data["instance_url"]
+            clear_instance_cache(instance_url)
             callback_url = request.build_absolute_uri(
                 reverse("accounts:mastodon_callback")
             )

@@ -13,6 +13,11 @@ def register_instance_app(instance_url: str, callback_url: str) -> dict:
     if cached:
         return {"client_id": cached.client_id, "client_secret": cached.client_secret}
 
+    return _do_register(instance_url, callback_url)
+
+
+def _do_register(instance_url: str, callback_url: str) -> dict:
+    """Make the actual API call to register the app."""
     with httpx.Client(timeout=30.0) as client:
         response = client.post(
             f"{instance_url}/api/v1/apps",
@@ -26,12 +31,19 @@ def register_instance_app(instance_url: str, callback_url: str) -> dict:
         response.raise_for_status()
         data = response.json()
 
-    InstanceApp.objects.create(
+    InstanceApp.objects.update_or_create(
         instance_url=instance_url,
-        client_id=data["client_id"],
-        client_secret=data["client_secret"],
+        defaults={
+            "client_id": data["client_id"],
+            "client_secret": data["client_secret"],
+        },
     )
     return {"client_id": data["client_id"], "client_secret": data["client_secret"]}
+
+
+def clear_instance_cache(instance_url: str) -> None:
+    """Remove cached app registration so it will be re-registered."""
+    InstanceApp.objects.filter(instance_url=instance_url).delete()
 
 
 def build_authorize_url(instance_url: str, client_id: str, callback_url: str) -> str:
