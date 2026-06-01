@@ -1,16 +1,21 @@
 #!/bin/bash
 set -e
 
-mkdir -p /data /var/lib/litefs
+litefs mount -config /etc/litefs.yml &
 
-for i in 1 2 3 4 5; do
-    if python manage.py migrate --noinput; then
+for i in $(seq 1 10); do
+    if mountpoint -q /data 2>/dev/null; then
         break
     fi
-    echo "migrate attempt $i failed, retrying in 2s..."
-    sleep 2
+    sleep 1
 done
 
-python manage.py qcluster &
+mkdir -p /data /var/lib/litefs
+
+python manage.py migrate --noinput
+
+if [ "$1" = "python" ] && [ "$2" = "manage.py" ] && [ "$3" = "qcluster" ]; then
+    exec python manage.py qcluster
+fi
 
 exec gunicorn config.wsgi:application --bind 0.0.0.0:8080 --workers 1 --threads 4 --timeout 120 --access-logfile -

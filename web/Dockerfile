@@ -23,6 +23,6 @@ RUN npx tailwindcss -i static/src/input.css -o static/css/output.css --minify
 RUN python manage.py collectstatic --noinput
 
 RUN chmod +x docker-entrypoint.sh
-ENTRYPOINT ["litefs", "mount", "-config", "/etc/litefs.yml"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
 EXPOSE 8080 8081
