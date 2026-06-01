@@ -22,7 +22,6 @@ from accounts.forms import (
 from accounts.mastodon import (
     build_authorize_url,
     exchange_code,
-    fetch_identity,
     register_instance_app,
 )
 from accounts.models import BlueskyAccount, MastodonAccount, User
@@ -167,7 +166,6 @@ def mastodon_callback(request):
             code,
             callback_url,
         )
-        identity = fetch_identity(state["instance_url"], token_data["access_token"])
     except Exception as e:
         logger.exception("Mastodon OAuth callback failed")
         return render(request, "accounts/connect_failed.html", {
@@ -175,13 +173,21 @@ def mastodon_callback(request):
             "error": str(e),
         })
 
+    mastodon_user_id = token_data.get("id", "")
+    mastodon_username = token_data.get("username", "")
+
+    # Try to extract username from the me field if available
+    me_field = token_data.get("me", "")
+    if not mastodon_username and me_field:
+        mastodon_username = me_field.rstrip("/").split("/")[-1]
+
     MastodonAccount.objects.update_or_create(
         user=request.user,
         defaults={
             "instance_url": state["instance_url"],
             "access_token": token_data["access_token"],
-            "mastodon_user_id": str(identity["id"]),
-            "mastodon_username": identity.get("username", ""),
+            "mastodon_user_id": mastodon_user_id,
+            "mastodon_username": mastodon_username,
             "is_active": True,
         },
     )
