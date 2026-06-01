@@ -45,7 +45,7 @@ class User(AbstractUser):
 
     @property
     def refresh_cooldown_seconds(self) -> int:
-        return {"free": 1800, "pro": 300}[self.plan]
+        return 300
 
     @property
     def is_fully_activated(self) -> bool:
