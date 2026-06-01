@@ -8,33 +8,32 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
 
-from feeds.models import ScoredLink
+from feeds.models import FeedFetchJob, ScoredLink
 
 logger = logging.getLogger(__name__)
 
 
 def fetch_user_feeds(user_id: int) -> None:
-    """Synchronous entry point for feed fetching."""
-    logger.info("Fetching feeds for user %s", user_id)
-    with asyncio.Runner() as runner:
-        runner.run(_fetch_user_feeds_async(user_id))
-    logger.info("Feed fetch complete for user %s", user_id)
+    """Task entry point for django-q2 worker."""
+    asyncio.run(_fetch_user_feeds_async(user_id))
 
 
 async def _fetch_user_feeds_async(user_id: int) -> None:
     User = get_user_model()
     user = await User.objects.aget(id=user_id)
-    logger.info("Fetching feeds for %s", user.username)
 
-    posts = []
-    from linkgnome.db import LinkgnomeDB
+    job = await FeedFetchJob.objects.acreate(user=user, status="running")
+    job.started_at = datetime.now(timezone.utc)
 
-    cache_db = LinkgnomeDB(db_path=Path(settings.LINKGNOME_CACHE_PATH))
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+    try:
+        posts = []
+        from linkgnome.db import LinkgnomeDB
 
-    mastodon = getattr(user, "mastodon_account", None)
-    if mastodon and mastodon.is_active:
-        try:
+        cache_db = LinkgnomeDB(db_path=Path(settings.LINKGNOME_CACHE_PATH))
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+
+        mastodon = getattr(user, "mastodon_account", None)
+        if mastodon and mastodon.is_active:
             from linkgnome.fetchers.mastodon import MastodonFetcher
             token = mastodon.access_token
             logger.info("Mastodon token length: %s", len(token) if token else 0)
@@ -45,12 +44,9 @@ async def _fetch_user_feeds_async(user_id: int) -> None:
             m_posts = await fetcher.fetch_timeline(cutoff=cutoff)
             logger.info("Mastodon: %d posts", len(m_posts))
             posts.extend(m_posts)
-        except Exception as e:
-            logger.exception("Mastodon fetch failed for %s", user.username)
 
-    bluesky = getattr(user, "bluesky_account", None)
-    if bluesky and bluesky.is_active:
-        try:
+        bluesky = getattr(user, "bluesky_account", None)
+        if bluesky and bluesky.is_active:
             from linkgnome.fetchers.bluesky import BlueskyFetcher
             pw = bluesky.app_password
             logger.info("Bluesky password length: %s", len(pw) if pw else 0)
@@ -61,21 +57,27 @@ async def _fetch_user_feeds_async(user_id: int) -> None:
             b_posts = await fetcher.fetch_timeline(cutoff=cutoff)
             logger.info("Bluesky: %d posts", len(b_posts))
             posts.extend(b_posts)
-        except Exception as e:
-            logger.exception("Bluesky fetch failed for %s", user.username)
 
-    from linkgnome.scorer import score_links
+        from linkgnome.scorer import score_links
 
-    scored = await score_links(posts, db=cache_db)
-    logger.info("Scored %d links", len(scored))
+        scored = await score_links(posts, db=cache_db)
+        logger.info("Scored %d links", len(scored))
 
-    await _store_scored_links(user, scored)
+        await _store_scored_links(user, scored)
+
+        job.status = "completed"
+        job.completed_at = datetime.now(timezone.utc)
+        await job.asave()
+
+    except Exception as exc:
+        logger.exception("Feed fetch failed for user %s", user_id)
+        job.status = "failed"
+        job.error_message = str(exc)
+        await job.asave()
 
 
 async def _store_scored_links(user, scored_links) -> None:
     """Bulk replace scored links for a user."""
-    from feeds.models import ScoredLink
-
     async with transaction.atomic():
         await ScoredLink.objects.filter(user=user).adelete()
         await ScoredLink.objects.abulk_create([

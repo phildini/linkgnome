@@ -3,12 +3,13 @@ from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django_q.tasks import async_task
 
-from feeds.models import ScoredLink
-from feeds.tasks import fetch_user_feeds
+from feeds.models import FeedFetchJob, ScoredLink
 
 PAGE_SIZE = 25
 
@@ -56,17 +57,32 @@ def refresh_feeds(request):
     user.last_refresh_at = timezone.now()
     user.save(update_fields=["last_refresh_at"])
 
-    fetch_user_feeds(user.id)
+    async_task("feeds.tasks.fetch_user_feeds", user.id)
 
-    links = ScoredLink.objects.filter(user=user)
-    paginator = Paginator(links, PAGE_SIZE)
-    page = paginator.get_page(1)
-
-    return render(request, "feeds/refresh_result.html", {
-        "links": page,
+    response = render(request, "feeds/refresh_button.html", {
         "can_refresh": False,
         "cooldown_remaining": user.refresh_cooldown_seconds,
     })
+    response["HX-Trigger"] = "startPolling"
+    return response
+
+
+@login_required
+def feed_status(request):
+    user = request.user
+    latest_job = (
+        FeedFetchJob.objects.filter(user=user)
+        .order_by("-requested_at")
+        .first()
+    )
+
+    if latest_job and latest_job.status == "completed":
+        links = ScoredLink.objects.filter(user=user)
+        paginator = Paginator(links, PAGE_SIZE)
+        page = paginator.get_page(1)
+        return render(request, "feeds/feed_table.html", {"links": page})
+
+    return HttpResponse(status=204)
 
 
 @login_required

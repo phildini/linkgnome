@@ -24,6 +24,7 @@ primary_region = 'iad'
 
 [[services]]
   internal_port = 8080
+  processes = ['web']
 
   [[services.ports]]
     port = 80
@@ -46,8 +47,9 @@ primary_region = 'iad'
     method = 'GET'
     path = '/health/'
 
-[cron]
-  "*/5 * * * *" = "python manage.py fetch_all_feeds"
+[processes]
+  web = ''
+  worker = 'python manage.py qcluster'
 
 [[vm]]
   memory = '1gb'
