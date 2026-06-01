@@ -22,10 +22,6 @@ primary_region = 'iad'
   auto_start_machines = true
   min_machines_running = 1
 
-[processes]
-  web = 'gunicorn'
-  worker = 'python manage.py qcluster'
-
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
