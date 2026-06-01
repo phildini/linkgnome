@@ -201,13 +201,10 @@ def connect_bluesky(request):
             app_password = form.cleaned_data["app_password"]
             try:
                 session = asyncio.run(verify_credentials(handle, app_password))
-        except Exception as e:
-            logger.exception("Bluesky verification failed")
-            form.add_error(None, f"Verification failed: {e}")
-            return render(request, "accounts/connect_bluesky.html", {"form": form})
-
-    return render(request, "accounts/connect_bluesky.html", {"form": form})
-
+            except Exception as e:
+                logger.exception("Bluesky verification failed")
+                form.add_error(None, f"Verification failed: {e}")
+                return render(request, "accounts/connect_bluesky.html", {"form": form})
 
             BlueskyAccount.objects.update_or_create(
                 user=request.user,
