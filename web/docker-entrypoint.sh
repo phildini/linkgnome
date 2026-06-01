@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+for i in 1 2 3 4 5; do
+    if python manage.py migrate --noinput 2>/dev/null; then
+        break
+    fi
+    echo "migrate attempt $i failed, retrying in 2s..."
+    sleep 2
+done
+
 if [ "$1" = "python" ] && [ "$2" = "manage.py" ] && [ "$3" = "qcluster" ]; then
     exec python manage.py qcluster
 fi
