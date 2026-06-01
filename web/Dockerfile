@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt linkgnome
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm install
 COPY . .
 RUN npx tailwindcss -i static/src/input.css -o static/css/output.css --minify && \
     mkdir -p /data && python manage.py collectstatic --noinput
