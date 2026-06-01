@@ -9,8 +9,11 @@ primary_region = 'iad'
 [build]
   dockerfile = 'Dockerfile'
 
+[release]
+  command = 'python manage.py migrate --noinput'
+
 [processes]
-  web = 'gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 1 --threads 4 --access-logfile -'
+  web = 'gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 1 --threads 4 --timeout 120 --access-logfile -'
   worker = 'python manage.py qcluster'
 
 [env]
@@ -45,9 +48,9 @@ primary_region = 'iad'
 
   [[services.http_checks]]
     interval = '30s'
-    timeout = '5s'
+    timeout = '10s'
     method = 'GET'
-    path = '/'
+    path = '/health/'
 
 [[vm]]
   memory = '1gb'
