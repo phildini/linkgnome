@@ -7,6 +7,11 @@
   <title>{% block title %}LinkGnome{% endblock %}</title>
   <link href="{% static 'css/output.css' %}" rel="stylesheet" />
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script>
+    document.addEventListener('htmx:configRequest', (e) => {
+      e.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+    });
+  </script>
 </head>
 <body class="min-h-screen bg-base-300">
   <div class="navbar bg-base-100 shadow-sm mb-6">
