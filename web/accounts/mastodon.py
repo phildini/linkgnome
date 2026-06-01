@@ -4,7 +4,7 @@ import httpx
 from accounts.models import InstanceApp
 
 
-MASTODON_SCOPES = "read:statuses"
+MASTODON_SCOPES = "read"
 
 
 def register_instance_app(instance_url: str, callback_url: str) -> dict:
