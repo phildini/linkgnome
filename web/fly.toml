@@ -18,7 +18,7 @@ primary_region = 'iad'
   DJANGO_DEBUG = 'False'
   DJANGO_SECRET_KEY = 'change-me-in-production'
 
-[mounts]
+[[mounts]]
   source = 'linkgnome_data'
   destination = '/data'
 

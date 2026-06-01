@@ -1,8 +1,10 @@
 #!/bin/bash
 set -e
 
+mkdir -p /data
+
 for i in 1 2 3 4 5; do
-    if python manage.py migrate --noinput 2>/dev/null; then
+    if python manage.py migrate --noinput; then
         break
     fi
     echo "migrate attempt $i failed, retrying in 2s..."
