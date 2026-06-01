@@ -1,25 +1,33 @@
 """Authentication and account management views."""
-import asyncio
-from django.contrib.auth import login, logout
-from django.contrib.auth.decorators import login_required
-from django.core.signing import TimestampSigner, SignatureExpired, BadSignature
-from django.core.mail import send_mail
-from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render, redirect
-from django.template.loader import render_to_string
-from django.urls import reverse
-from django.utils import timezone
-from django.conf import settings
-from django_ratelimit.decorators import ratelimit
-
 import logging
 
-from accounts.forms import SignupForm, LoginForm, InstanceUrlForm, BlueskyConnectForm
-from accounts.models import User, MastodonAccount, BlueskyAccount
+from django.conf import settings
+from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
+from django.core.mail import send_mail
+from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
+from django.http import HttpResponseRedirect
+from django.shortcuts import redirect, render
+from django.template.loader import render_to_string
+from django.urls import reverse
+from django_ratelimit.decorators import ratelimit
+
+from accounts.bluesky import verify_credentials
+from accounts.forms import (
+    BlueskyConnectForm,
+    InstanceUrlForm,
+    LoginForm,
+    SignupForm,
+)
+from accounts.mastodon import (
+    build_authorize_url,
+    exchange_code,
+    fetch_identity,
+    register_instance_app,
+)
+from accounts.models import BlueskyAccount, MastodonAccount, User
 
 logger = logging.getLogger(__name__)
-
-
 signer = TimestampSigner()
 
 
@@ -119,9 +127,7 @@ def connect_mastodon(request):
                 reverse("accounts:mastodon_callback")
             )
             try:
-                app = asyncio.run(
-                    register_instance_app(instance_url, callback_url)
-                )
+                app = register_instance_app(instance_url, callback_url)
             except Exception as e:
                 logger.exception("Failed to register app with %s", instance_url)
                 form.add_error("instance_url", f"Failed to register with this instance: {e}")
@@ -154,18 +160,14 @@ def mastodon_callback(request):
 
     callback_url = request.build_absolute_uri(reverse("accounts:mastodon_callback"))
     try:
-        token_data = asyncio.run(
-            exchange_code(
-                state["instance_url"],
-                state["client_id"],
-                state["client_secret"],
-                code,
-                callback_url,
-            )
+        token_data = exchange_code(
+            state["instance_url"],
+            state["client_id"],
+            state["client_secret"],
+            code,
+            callback_url,
         )
-        identity = asyncio.run(
-            fetch_identity(state["instance_url"], token_data["access_token"])
-        )
+        identity = fetch_identity(state["instance_url"], token_data["access_token"])
     except Exception as e:
         logger.exception("Mastodon OAuth callback failed")
         return render(request, "accounts/connect_failed.html", {
@@ -200,7 +202,7 @@ def connect_bluesky(request):
             handle = form.cleaned_data["handle"]
             app_password = form.cleaned_data["app_password"]
             try:
-                session = asyncio.run(verify_credentials(handle, app_password))
+                session = verify_credentials(handle, app_password)
             except Exception as e:
                 logger.exception("Bluesky verification failed")
                 form.add_error(None, f"Verification failed: {e}")
@@ -238,8 +240,3 @@ def disconnect_bluesky(request):
         if account:
             account.delete()
     return redirect("accounts:settings")
-
-
-# Import OAuth helpers at module level for view use
-from accounts.mastodon import register_instance_app, build_authorize_url, exchange_code, fetch_identity  # noqa: E402
-from accounts.bluesky import verify_credentials  # noqa: E402

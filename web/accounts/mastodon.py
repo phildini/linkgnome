@@ -7,14 +7,14 @@ from accounts.models import InstanceApp
 MASTODON_SCOPES = "read:statuses"
 
 
-async def register_instance_app(instance_url: str, callback_url: str) -> dict:
+def register_instance_app(instance_url: str, callback_url: str) -> dict:
     """Register a LinkGnome app with a Mastodon instance and cache credentials."""
     cached = InstanceApp.objects.filter(instance_url=instance_url).first()
     if cached:
         return {"client_id": cached.client_id, "client_secret": cached.client_secret}
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.post(
+    with httpx.Client(timeout=30.0) as client:
+        response = client.post(
             f"{instance_url}/api/v1/apps",
             data={
                 "client_name": "LinkGnome",
@@ -48,12 +48,12 @@ def build_authorize_url(instance_url: str, client_id: str, callback_url: str) ->
     return f"{instance_url}/oauth/authorize?{params}"
 
 
-async def exchange_code(
+def exchange_code(
     instance_url: str, client_id: str, client_secret: str, code: str, callback_url: str
 ) -> dict:
     """Exchange an authorization code for an access token."""
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.post(
+    with httpx.Client(timeout=30.0) as client:
+        response = client.post(
             f"{instance_url}/oauth/token",
             data={
                 "client_id": client_id,
@@ -69,10 +69,10 @@ async def exchange_code(
         return response.json()
 
 
-async def fetch_identity(instance_url: str, access_token: str) -> dict:
+def fetch_identity(instance_url: str, access_token: str) -> dict:
     """Fetch the authenticated user's Mastodon identity."""
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.get(
+    with httpx.Client(timeout=30.0) as client:
+        response = client.get(
             f"{instance_url}/api/v1/accounts/verify_credentials",
             headers={"Authorization": f"Bearer {access_token}"},
         )
