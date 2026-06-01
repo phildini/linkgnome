@@ -19,7 +19,7 @@ primary_region = 'iad'
   DJANGO_SECRET_KEY = 'change-me-in-production'
 
 [[mounts]]
-  source = 'linkgnome_data'
+  source = 'linkgnome_data_v2'
   destination = '/data'
 
 [[services]]
