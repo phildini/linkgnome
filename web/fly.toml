@@ -14,17 +14,12 @@ primary_region = 'iad'
   DJANGO_DEBUG = 'False'
   DJANGO_SECRET_KEY = 'change-me-in-production'
 
-[processes]
-  web = ''
-  worker = 'python manage.py qcluster'
-
 [[mounts]]
   source = 'litefs_data'
   destination = '/var/lib/litefs'
 
 [[services]]
   internal_port = 8081
-  processes = ['web']
 
   [[services.ports]]
     port = 80
