@@ -9,7 +9,7 @@ exit-on-error: false
 proxy:
   addr: ":8081"
   target: "localhost:8080"
-  db: "linkgnome"
+  db: "linkgnome.db"
   passthrough:
     - "*.ico"
     - "*.png"
