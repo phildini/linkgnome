@@ -24,7 +24,6 @@ primary_region = 'iad'
 
 [[services]]
   internal_port = 8080
-  processes = ['web']
 
   [[services.ports]]
     port = 80
