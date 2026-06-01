@@ -22,10 +22,6 @@ primary_region = 'iad'
   source = 'linkgnome_data'
   destination = '/data'
 
-[processes]
-  web = ''
-  worker = 'python manage.py qcluster'
-
 [[services]]
   internal_port = 8080
   processes = ['web']
@@ -50,6 +46,9 @@ primary_region = 'iad'
     timeout = '10s'
     method = 'GET'
     path = '/health/'
+
+[cron]
+  "*/5 * * * *" = "python manage.py fetch_all_feeds"
 
 [[vm]]
   memory = '1gb'

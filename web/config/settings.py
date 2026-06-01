@@ -31,7 +31,6 @@ INSTALLED_APPS = [
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
     "axes",
-    "django_q",
     "accounts",
     "feeds",
     "billing",
@@ -105,17 +104,6 @@ AXES_ENABLED = not DEBUG
 # django-ratelimit
 RATELIMIT_ENABLE = not DEBUG
 RATELIMIT_FAIL_OPEN = False
-
-# django-q2
-Q_CLUSTER = {
-    "name": "linkgnome",
-    "workers": 1,
-    "timeout": 120,
-    "retry": 180,
-    "orm": "default",
-    "poll": 2,
-    "catch_up": False,
-}
 
 # Email (Postmark via django-anymail)
 EMAIL_BACKEND = os.environ.get(

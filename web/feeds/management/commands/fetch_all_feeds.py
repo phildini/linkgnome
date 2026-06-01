@@ -1,4 +1,4 @@
-"""Management command to enqueue feed fetches for users due for refresh.
+"""Management command to run feed fetches for users due for refresh.
 
 Runs every 5 minutes. Each user is refreshed once per 60 minutes,
 staggered by their signup minute."""
@@ -6,11 +6,12 @@ from datetime import datetime
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
-from django_q.tasks import async_task
+
+from feeds.tasks import fetch_user_feeds
 
 
 class Command(BaseCommand):
-    help = "Enqueue feed fetches for users due for staggered refresh"
+    help = "Run feed fetches for users due for staggered refresh"
 
     def handle(self, *args, **options):
         now = datetime.now()
@@ -30,8 +31,9 @@ class Command(BaseCommand):
                 has_mastodon = getattr(user, "mastodon_account", None)
                 has_bluesky = getattr(user, "bluesky_account", None)
                 if has_mastodon or has_bluesky:
-                    async_task("feeds.tasks.fetch_user_feeds", user.id)
+                    self.stdout.write(f"  Fetching feeds for {user.username}...")
+                    fetch_user_feeds(user.id)
                     count += 1
 
         if count:
-            self.stdout.write(f"Enqueued feed fetches for {count} users")
+            self.stdout.write(f"Refreshed {count} users")
