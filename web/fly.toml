@@ -5,11 +5,7 @@ primary_region = 'iad'
   dockerfile = 'Dockerfile'
 
 [deploy]
-  release_command_timeout = '120s'
   strategy = 'immediate'
-
-[release]
-  command = 'python manage.py migrate --noinput'
 
 [env]
   ALLOWED_HOSTS = '*'
@@ -19,12 +15,12 @@ primary_region = 'iad'
   DJANGO_SECRET_KEY = 'change-me-in-production'
 
 [[mounts]]
-  source = 'linkgnome_data_v2'
-  destination = '/data'
+  source = 'litefs_data'
+  destination = '/var/lib/litefs'
 
 [[services]]
-  internal_port = 8080
-  processes = ['web']
+  internal_port = 8081
+  processes = ['app']
 
   [[services.ports]]
     port = 80
@@ -46,10 +42,6 @@ primary_region = 'iad'
     timeout = '10s'
     method = 'GET'
     path = '/health/'
-
-[processes]
-  web = ''
-  worker = 'python manage.py qcluster'
 
 [[vm]]
   memory = '1gb'

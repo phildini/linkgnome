@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-mkdir -p /data
+mkdir -p /data /var/lib/litefs
 
 for i in 1 2 3 4 5; do
     if python manage.py migrate --noinput; then
@@ -11,8 +11,6 @@ for i in 1 2 3 4 5; do
     sleep 2
 done
 
-if [ "$1" = "python" ] && [ "$2" = "manage.py" ] && [ "$3" = "qcluster" ]; then
-    exec python manage.py qcluster
-fi
+python manage.py qcluster &
 
 exec gunicorn config.wsgi:application --bind 0.0.0.0:8080 --workers 1 --threads 4 --timeout 120 --access-logfile -
