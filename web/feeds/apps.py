@@ -7,11 +7,11 @@ def _create_schedule(sender, **kwargs):
     """Create the recurring fetch schedule if it doesn't exist."""
     from django_q.models import Schedule
 
-    Schedule.objects.get_or_create(
-        func="django.core.management.call_command",
+    Schedule.objects.update_or_create(
         name="fetch_all_feeds",
         defaults={
-            "args": "fetch_all_feeds",
+            "func": "django.core.management.call_command",
+            "args": "('fetch_all_feeds',)",
             "schedule_type": Schedule.MINUTES,
             "minutes": 5,
             "repeats": -1,
