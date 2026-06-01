@@ -11,7 +11,7 @@ from feeds.models import ScoredLink, FeedFetchJob
 
 
 def fetch_user_feeds(user_id: int) -> None:
-    """Synchronous entry point for django-q2."""
+    """Synchronous entry point for feed fetching."""
     with asyncio.Runner() as runner:
         runner.run(_fetch_user_feeds_async(user_id))
 
