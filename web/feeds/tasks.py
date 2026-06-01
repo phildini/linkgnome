@@ -4,6 +4,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -32,7 +33,7 @@ async def _fetch_user_feeds_async(user_id: int) -> None:
         cache_db = LinkgnomeDB(db_path=Path(settings.LINKGNOME_CACHE_PATH))
         cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
 
-        mastodon = getattr(user, "mastodon_account", None)
+        mastodon = await sync_to_async(getattr)(user, "mastodon_account", None)
         if mastodon and mastodon.is_active:
             from linkgnome.fetchers.mastodon import MastodonFetcher
             token = mastodon.access_token
@@ -45,7 +46,7 @@ async def _fetch_user_feeds_async(user_id: int) -> None:
             logger.info("Mastodon: %d posts", len(m_posts))
             posts.extend(m_posts)
 
-        bluesky = getattr(user, "bluesky_account", None)
+        bluesky = await sync_to_async(getattr)(user, "bluesky_account", None)
         if bluesky and bluesky.is_active:
             from linkgnome.fetchers.bluesky import BlueskyFetcher
             pw = bluesky.app_password
@@ -101,4 +102,5 @@ async def _store_scored_links(user, scored_links) -> None:
             )
             for link in scored_links
         ])
-    logger.info("Stored %d scored links for %s", len(scored_links), user.username)
+    username = await sync_to_async(getattr)(user, "username", str(user.id))
+    logger.info("Stored %d scored links for %s", len(scored_links), username)
