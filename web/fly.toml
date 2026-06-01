@@ -12,7 +12,7 @@ primary_region = 'iad'
   command = 'python manage.py migrate --noinput'
 
 [env]
-  ALLOWED_HOSTS = 'linkgnome.fly.dev,localhost'
+  ALLOWED_HOSTS = '*'
   CSRF_TRUSTED_ORIGINS = 'https://linkgnome.fly.dev'
   DATA_DIR = '/data'
   DJANGO_DEBUG = 'False'
