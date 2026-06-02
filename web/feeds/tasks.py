@@ -82,6 +82,24 @@ async def _store_scored_links(user, scored_links) -> None:
     await sync_to_async(_store_scored_links_sync)(user, scored_links)
 
 
+def _extract_post_url(post) -> str:
+    """Extract the original post URL from a Post object."""
+    if post.raw_data:
+        if post.platform.value == "mastodon":
+            return post.raw_data.get("url") or post.raw_data.get("uri") or ""
+        if post.platform.value == "bluesky":
+            post_data = post.raw_data.get("post", {})
+            uri = post_data.get("uri", "")
+            author = post_data.get("author", {})
+            handle = author.get("handle", "")
+            if handle and uri:
+                parts = uri.split("/")
+                rkey = parts[-1] if parts else ""
+                return f"https://bsky.app/profile/{handle}/post/{rkey}"
+            return uri
+    return post.id
+
+
 def _store_scored_links_sync(user, scored_links) -> None:
     """Synchronous version of _store_scored_links."""
     with transaction.atomic():
@@ -101,6 +119,7 @@ def _store_scored_links_sync(user, scored_links) -> None:
                         for p in (link.posts or [])
                     )
                 ),
+                author_post_urls=[_extract_post_url(p) for p in (link.posts or []) if p],
                 post_count=link.post_count,
                 boost_count=link.boost_count,
                 like_count=link.like_count,

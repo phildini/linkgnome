@@ -38,6 +38,7 @@ class ScoredLink(models.Model):
         help_text="Platform label e.g. 'mastodon', 'bluesky', or 'mastodon+bluesky'",
     )
     author_names = models.CharField(max_length=500, blank=True)
+    author_post_urls = models.JSONField(default=list, blank=True)
     post_count = models.IntegerField(default=0)
     boost_count = models.IntegerField(default=0)
     like_count = models.IntegerField(default=0)
