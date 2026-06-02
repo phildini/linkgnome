@@ -2,7 +2,7 @@ app = 'linkgnome'
 primary_region = 'iad'
 
 [build]
-  dockerfile = 'Dockerfile'
+  dockerfile = 'web/Dockerfile'
 
 [deploy]
   strategy = 'immediate'
