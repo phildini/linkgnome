@@ -27,19 +27,19 @@
        hx-get="{% url 'feeds:feed_table' %}?platform=all"
        hx-target="#feed-table"
        hx-swap="outerHTML"
-       hx-push-url="true">All</a>
+       hx-push-url="{% url 'feeds:dashboard' %}?platform=all">All</a>
     <a href="{% url 'feeds:dashboard' %}?platform=mastodon"
        class="btn btn-sm join-item {% if current_platform == 'mastodon' %}btn-active{% endif %}"
        hx-get="{% url 'feeds:feed_table' %}?platform=mastodon"
        hx-target="#feed-table"
        hx-swap="outerHTML"
-       hx-push-url="true">Mastodon</a>
+       hx-push-url="{% url 'feeds:dashboard' %}?platform=mastodon">Mastodon</a>
     <a href="{% url 'feeds:dashboard' %}?platform=bluesky"
        class="btn btn-sm join-item {% if current_platform == 'bluesky' %}btn-active{% endif %}"
        hx-get="{% url 'feeds:feed_table' %}?platform=bluesky"
        hx-target="#feed-table"
        hx-swap="outerHTML"
-       hx-push-url="true">Bluesky</a>
+       hx-push-url="{% url 'feeds:dashboard' %}?platform=bluesky">Bluesky</a>
   </div>
 
   {% include "feeds/feed_table.html" %}
