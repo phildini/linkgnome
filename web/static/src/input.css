@@ -8,12 +8,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
-    }
+    html { scroll-behavior: auto; }
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
   }
@@ -32,61 +29,76 @@
   }
 
   body {
-    background-image:
-      radial-gradient(ellipse at 20% 50%, rgba(46, 125, 50, 0.04) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, rgba(249, 168, 37, 0.03) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 80%, rgba(85, 139, 47, 0.03) 0%, transparent 50%);
+    background:
+      radial-gradient(ellipse at 10% 30%, rgba(46, 125, 50, 0.12) 0%, transparent 55%),
+      radial-gradient(ellipse at 90% 70%, rgba(212, 160, 23, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 10%, rgba(85, 139, 47, 0.06) 0%, transparent 50%);
     background-attachment: fixed;
+    background-color: #eeede0;
+  }
+
+  .card:not(.bg-transparent) {
+    background: #f4f3e8 !important;
   }
 }
 
 @layer components {
   .gnome-nav {
-    border-bottom: 1px solid #d6d9c5;
-    background: linear-gradient(180deg, rgba(245, 247, 238, 0.95), rgba(245, 247, 238, 0.85));
-    backdrop-filter: blur(8px);
+    background: rgba(238, 237, 224, 0.92);
+    border-bottom: 1px solid #c5c1ae;
+    backdrop-filter: blur(10px);
   }
 
   .gnome-card {
-    border-left: 3px solid #2e7d32;
-    transition: border-left-color 0.15s ease, box-shadow 0.15s ease;
+    border: 1px solid #c5c1ae;
+    border-left: 4px solid #3d6b4e;
+    background: #f4f3e8 !important;
+    transition: border-left-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
   }
 
   .gnome-card:hover {
-    border-left-color: #f9a825;
-    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.08);
+    border-left-color: #d4a017;
+    background: #f7f6ed !important;
+    box-shadow: 0 2px 12px rgba(46, 125, 50, 0.12);
   }
 
   .gnome-card:focus-within {
-    border-left-color: #f9a825;
-    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.12);
+    border-left-color: #d4a017;
+    box-shadow: 0 2px 12px rgba(46, 125, 50, 0.15);
+  }
+
+  .gnome-card .card-body {
+    padding: 0.625rem 0.75rem !important;
   }
 
   .gnome-badge-m {
     background: linear-gradient(135deg, #6364ff, #7c6dff);
     color: white;
+    font-size: 0.65rem !important;
   }
 
   .gnome-badge-b {
     background: linear-gradient(135deg, #0285ff, #4a9eff);
     color: white;
+    font-size: 0.65rem !important;
   }
 
   .gnome-badge-score {
-    background: linear-gradient(135deg, #2e7d32, #3a9e40);
+    background: linear-gradient(135deg, #2e7d32, #4a9e40);
     color: white;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 0.65rem !important;
   }
 
   .gnome-btn-filter {
-    border: 1px solid #d6d9c5;
+    border: 1px solid #b8b4a0;
     color: #4a5e40;
     background: transparent;
     transition: all 0.12s ease;
   }
 
   .gnome-btn-filter:hover {
-    background: rgba(46, 125, 50, 0.08);
+    background: rgba(46, 125, 50, 0.1);
     border-color: #2e7d32;
   }
 
@@ -111,5 +123,11 @@
 
   .skip-link:focus {
     top: 0.5rem;
+  }
+
+  .gnome-card-list {
+    background: rgba(220, 217, 200, 0.3);
+    border-radius: 0.75rem;
+    padding: 0.5rem;
   }
 }

@@ -1,10 +1,10 @@
 {% load static %}
 <div id="feed-table" role="region" aria-label="Ranked links from your feeds" aria-live="polite">
 {% if links %}
-  <div class="space-y-2">
+  <div class="space-y-1 gnome-card-list">
     {% for link in links %}
-      <article class="card card-compact bg-base-100 shadow-sm border border-base-200 gnome-card" tabindex="-1" aria-label="Link ranked {{ link.score|floatformat:0 }} from {{ link.platform }}">
-        <div class="card-body px-3 py-2.5">
+      <article class="card card-compact gnome-card" tabindex="-1" aria-label="Link ranked {{ link.score|floatformat:0 }} from {{ link.platform }}">
+        <div class="card-body">
           <div class="flex items-start gap-2">
             <div class="flex items-center gap-1 shrink-0 mt-0.5" role="list" aria-label="Platform and score">
               {% if "mastodon" in link.platform %}
