@@ -33,6 +33,13 @@
                   {% if link.author_post_urls|length > 1 %}
                     <span class="text-base-content/30">+{{ link.author_post_urls|length|add:"-1" }}</span>
 {% endif %}
+
+  <div id="feed-poll"
+       hx-get="{% url 'feeds:feed_status' %}?platform={{ current_platform }}"
+       hx-trigger="startPolling from:body"
+       hx-target="#feed-table"
+       hx-swap="outerHTML">
+  </div>
 </div>
                 {% endif %}
                 <span class="ml-auto whitespace-nowrap" title="Posts · Boosts · Likes">

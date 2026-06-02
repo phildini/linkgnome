@@ -43,12 +43,5 @@
   </div>
 
   {% include "feeds/feed_table.html" %}
-
-  <div id="feed-poll"
-       hx-get="{% url 'feeds:feed_status' %}?platform={{ current_platform }}"
-       hx-trigger="startPolling from:body, every 2s"
-       hx-target="#feed-table"
-       hx-swap="outerHTML">
-  </div>
 </div>
 {% endblock %}
