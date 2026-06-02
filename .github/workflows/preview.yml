@@ -4,7 +4,7 @@ on:
     types: [opened, synchronize, closed]
 
 jobs:
-  preview:
+  deploy-preview:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -19,25 +19,30 @@ jobs:
           echo "app=linkgnome-pr-${{ github.event.number }}" >> $GITHUB_OUTPUT
           echo "url=https://linkgnome-pr-${{ github.event.number }}.fly.dev" >> $GITHUB_OUTPUT
 
-      - name: Create app if needed
-        if: github.event.action != 'closed'
-        continue-on-error: true
+      - name: Destroy preview (PR closed)
+        if: github.event.action == 'closed'
         run: |
-          fly launch --no-deploy \
-            --name "${{ steps.names.outputs.app }}" \
-            --region iad \
-            --config web/fly.toml \
-            --copy-config \
-            --now
+          VOLUMES=$(fly volumes list --app "${{ steps.names.outputs.app }}" --json 2>/dev/null | python3 -c "import sys,json; [print(v['id']) for v in json.load(sys.stdin)]" 2>/dev/null || true)
+          for VOL_ID in $VOLUMES; do
+            fly volumes delete "$VOL_ID" --yes 2>/dev/null || true
+          done
+          fly apps destroy "${{ steps.names.outputs.app }}" --yes 2>/dev/null || true
 
-      - name: Prepare LiteFS volume
+      - name: Create app
         if: github.event.action != 'closed'
-        continue-on-error: true
         run: |
-          fly volumes create litefs_data \
-            --app "${{ steps.names.outputs.app }}" \
-            --size 1 \
-            --region iad || true
+          fly apps create "${{ steps.names.outputs.app }}" --org personal 2>/dev/null || true
+
+      - name: Create LiteFS volume
+        if: github.event.action != 'closed'
+        run: |
+          EXISTING=$(fly volumes list --app "${{ steps.names.outputs.app }}" --json 2>/dev/null | python3 -c "import sys,json; vols=json.load(sys.stdin); print('yes') if vols else print('no')" 2>/dev/null || echo "no")
+          if [ "$EXISTING" = "no" ]; then
+            fly volumes create litefs_data \
+              --app "${{ steps.names.outputs.app }}" \
+              --size 1 \
+              --region iad
+          fi
 
       - name: Set secrets
         if: github.event.action != 'closed'
@@ -47,7 +52,8 @@ jobs:
             DJANGO_SECRET_KEY="$(openssl rand -hex 32)" \
             DJANGO_DEBUG="True" \
             ALLOWED_HOSTS="*" \
-            CSRF_TRUSTED_ORIGINS="${{ steps.names.outputs.url }}"
+            CSRF_TRUSTED_ORIGINS="${{ steps.names.outputs.url }}" \
+            DATA_DIR="/data"
 
       - name: Deploy
         if: github.event.action != 'closed'
@@ -67,10 +73,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🚀 Preview deployed: [${url}](${url})\n\nDestroy with \`fly apps destroy ${{ steps.names.outputs.app }} --yes\``
+              body: `🚀 Preview deployed: [${url}](${url})`
             });
-
-      - name: Destroy preview
-        if: github.event.action == 'closed'
-        run: |
-          fly apps destroy "${{ steps.names.outputs.app }}" --yes || true
