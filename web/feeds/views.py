@@ -42,7 +42,7 @@ def feed_table(request):
     links = _filter_links(user, platform)
     paginator = Paginator(links, PAGE_SIZE)
     page = paginator.get_page(request.GET.get("page", 1))
-    return render(request, "feeds/feed_table.html", {
+    return render(request, "feeds/feed_content.html", {
         "links": page,
         "current_platform": platform,
     })
@@ -96,7 +96,7 @@ def feed_status(request):
         links = _filter_links(user, platform)
         paginator = Paginator(links, PAGE_SIZE)
         page = paginator.get_page(1)
-        return render(request, "feeds/feed_table.html", {
+        return render(request, "feeds/feed_content.html", {
             "links": page,
             "current_platform": platform,
         })

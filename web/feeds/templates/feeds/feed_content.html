@@ -1,0 +1,31 @@
+{% load static %}
+<div id="feed-content">
+  <div id="filter-bar" class="join mb-3" role="group" aria-label="Filter by platform">
+    <a href="{% url 'feeds:dashboard' %}?platform=all"
+       class="btn btn-xs join-item gnome-btn-filter {% if current_platform == 'all' %}btn-active{% endif %}"
+       hx-get="{% url 'feeds:feed_table' %}?platform=all"
+       hx-target="#feed-content"
+       hx-swap="outerHTML"
+       hx-push-url="{% url 'feeds:dashboard' %}?platform=all"
+       aria-label="Show all links"
+       aria-pressed="{% if current_platform == 'all' %}true{% else %}false{% endif %}">All</a>
+    <a href="{% url 'feeds:dashboard' %}?platform=mastodon"
+       class="btn btn-xs join-item gnome-btn-filter {% if current_platform == 'mastodon' %}btn-active{% endif %}"
+       hx-get="{% url 'feeds:feed_table' %}?platform=mastodon"
+       hx-target="#feed-content"
+       hx-swap="outerHTML"
+       hx-push-url="{% url 'feeds:dashboard' %}?platform=mastodon"
+       aria-label="Show only Mastodon links"
+       aria-pressed="{% if current_platform == 'mastodon' %}true{% else %}false{% endif %}">M</a>
+    <a href="{% url 'feeds:dashboard' %}?platform=bluesky"
+       class="btn btn-xs join-item gnome-btn-filter {% if current_platform == 'bluesky' %}btn-active{% endif %}"
+       hx-get="{% url 'feeds:feed_table' %}?platform=bluesky"
+       hx-target="#feed-content"
+       hx-swap="outerHTML"
+       hx-push-url="{% url 'feeds:dashboard' %}?platform=bluesky"
+       aria-label="Show only Bluesky links"
+       aria-pressed="{% if current_platform == 'bluesky' %}true{% else %}false{% endif %}">B</a>
+  </div>
+
+  {% include "feeds/feed_table.html" %}
+</div>

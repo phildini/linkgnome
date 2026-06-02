@@ -61,9 +61,9 @@
       {% if links.has_previous %}
         <a class="btn btn-outline btn-sm gnome-btn-filter"
            hx-get="{% url 'feeds:feed_table' %}?platform={{ current_platform }}&page={{ links.previous_page_number }}"
-           hx-target="#feed-table"
+           hx-target="#feed-content"
            hx-swap="outerHTML"
-           hx-push-url="true"
+           hx-push-url="{% url 'feeds:dashboard' %}?platform={{ current_platform }}&page={{ links.previous_page_number }}"
            href="{% url 'feeds:dashboard' %}?platform={{ current_platform }}&page={{ links.previous_page_number }}"
            aria-label="Previous page">
           ← Previous
@@ -77,9 +77,9 @@
       {% if links.has_next %}
         <a class="btn btn-outline btn-sm gnome-btn-filter"
            hx-get="{% url 'feeds:feed_table' %}?platform={{ current_platform }}&page={{ links.next_page_number }}"
-           hx-target="#feed-table"
+           hx-target="#feed-content"
            hx-swap="outerHTML"
-           hx-push-url="true"
+           hx-push-url="{% url 'feeds:dashboard' %}?platform={{ current_platform }}&page={{ links.next_page_number }}"
            href="{% url 'feeds:dashboard' %}?platform={{ current_platform }}&page={{ links.next_page_number }}"
            aria-label="Next page">
           Next →
