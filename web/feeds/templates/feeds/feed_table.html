@@ -1,3 +1,4 @@
+<div id="feed-table">
 {% if links %}
   <div class="space-y-2">
     {% for link in links %}
@@ -31,7 +32,8 @@
                   </a>
                   {% if link.author_post_urls|length > 1 %}
                     <span class="text-base-content/30">+{{ link.author_post_urls|length|add:"-1" }}</span>
-                  {% endif %}
+{% endif %}
+</div>
                 {% endif %}
                 <span class="ml-auto whitespace-nowrap" title="Posts · Boosts · Likes">
                   📝{{ link.post_count }} · 🔄{{ link.boost_count }} · ❤️{{ link.like_count }}

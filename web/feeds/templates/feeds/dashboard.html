@@ -42,9 +42,7 @@
        hx-push-url="true">Bluesky</a>
   </div>
 
-  <div id="feed-table">
-    {% include "feeds/feed_table.html" %}
-  </div>
+  {% include "feeds/feed_table.html" %}
 
   <div id="feed-poll"
        hx-get="{% url 'feeds:feed_status' %}?platform={{ current_platform }}"
