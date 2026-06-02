@@ -3,7 +3,7 @@
 {% if links %}
   <div class="space-y-1 gnome-card-list">
     {% for link in links %}
-      <article class="card card-compact gnome-card" tabindex="-1" aria-label="Link ranked {{ link.score|floatformat:0 }} from {{ link.platform }}">
+      <article class="card card-compact gnome-card{% if "mastodon" in link.platform and "bluesky" not in link.platform %} gnome-card-mastodon{% elif "bluesky" in link.platform and "mastodon" not in link.platform %} gnome-card-bluesky{% endif %}" tabindex="-1" aria-label="Link ranked {{ link.score|floatformat:0 }} from {{ link.platform }}">
         <div class="card-body">
           <div class="flex items-start gap-2">
             <div class="flex items-center gap-1 shrink-0 mt-0.5" role="list" aria-label="Platform and score">

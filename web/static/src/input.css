@@ -30,9 +30,10 @@
 
   body {
     background:
-      radial-gradient(ellipse at 10% 30%, rgba(46, 125, 50, 0.12) 0%, transparent 55%),
-      radial-gradient(ellipse at 90% 70%, rgba(212, 160, 23, 0.08) 0%, transparent 55%),
-      radial-gradient(ellipse at 50% 10%, rgba(85, 139, 47, 0.06) 0%, transparent 50%);
+      radial-gradient(ellipse at 5% 25%, rgba(46, 125, 50, 0.18) 0%, transparent 50%),
+      radial-gradient(ellipse at 95% 30%, rgba(212, 160, 23, 0.10) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 85%, rgba(85, 139, 47, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 30% 60%, rgba(109, 76, 42, 0.04) 0%, transparent 40%);
     background-attachment: fixed;
     background-color: #eeede0;
   }
@@ -44,26 +45,41 @@
 
 @layer components {
   .gnome-nav {
-    background: rgba(238, 237, 224, 0.92);
+    background: linear-gradient(180deg, rgba(238, 237, 224, 0.95), rgba(238, 237, 224, 0.88));
     border-bottom: 1px solid #c5c1ae;
     backdrop-filter: blur(10px);
   }
 
   .gnome-card {
     border: 1px solid #c5c1ae;
-    border-left: 4px solid #3d6b4e;
-    background: #f4f3e8 !important;
-    transition: border-left-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    background: linear-gradient(135deg, #f4f3e8 0%, #f0efe2 100%) !important;
+    transition: box-shadow 0.15s ease, background 0.15s ease;
+  }
+
+  .gnome-card.gnome-card-mastodon {
+    background: linear-gradient(135deg, #f4f3e8 0%, #f0ecf5 100%) !important;
+  }
+
+  .gnome-card.gnome-card-bluesky {
+    background: linear-gradient(135deg, #f4f3e8 0%, #ebf0f8 100%) !important;
   }
 
   .gnome-card:hover {
-    border-left-color: #d4a017;
-    background: #f7f6ed !important;
+    background: linear-gradient(135deg, #f7f6ed 0%, #f3f2e5 100%) !important;
     box-shadow: 0 2px 12px rgba(46, 125, 50, 0.12);
   }
 
+  .gnome-card.gnome-card-mastodon:hover {
+    background: linear-gradient(135deg, #f7f6ed 0%, #f3edfa 100%) !important;
+    box-shadow: 0 2px 12px rgba(99, 100, 255, 0.1);
+  }
+
+  .gnome-card.gnome-card-bluesky:hover {
+    background: linear-gradient(135deg, #f7f6ed 0%, #edf2fc 100%) !important;
+    box-shadow: 0 2px 12px rgba(2, 133, 255, 0.1);
+  }
+
   .gnome-card:focus-within {
-    border-left-color: #d4a017;
     box-shadow: 0 2px 12px rgba(46, 125, 50, 0.15);
   }
 
@@ -72,22 +88,25 @@
   }
 
   .gnome-badge-m {
-    background: linear-gradient(135deg, #6364ff, #7c6dff);
+    background: linear-gradient(135deg, #7c5cff, #9b7eff);
     color: white;
     font-size: 0.65rem !important;
+    box-shadow: 0 1px 3px rgba(124, 92, 255, 0.25);
   }
 
   .gnome-badge-b {
-    background: linear-gradient(135deg, #0285ff, #4a9eff);
+    background: linear-gradient(135deg, #1a8aff, #5aaeff);
     color: white;
     font-size: 0.65rem !important;
+    box-shadow: 0 1px 3px rgba(26, 138, 255, 0.25);
   }
 
   .gnome-badge-score {
-    background: linear-gradient(135deg, #2e7d32, #4a9e40);
+    background: linear-gradient(135deg, #2e7d32, #4aae40);
     color: white;
     font-weight: 700;
     font-size: 0.65rem !important;
+    box-shadow: 0 1px 3px rgba(46, 125, 50, 0.25);
   }
 
   .gnome-btn-filter {
@@ -126,8 +145,26 @@
   }
 
   .gnome-card-list {
-    background: rgba(220, 217, 200, 0.3);
+    background: linear-gradient(180deg, rgba(220, 217, 200, 0.4), rgba(220, 217, 200, 0.15));
     border-radius: 0.75rem;
     padding: 0.5rem;
+  }
+
+  .gnome-btn-filter.btn-active {
+    background: linear-gradient(135deg, #2e7d32, #3a9e40);
+    border-color: #2e7d32;
+    color: white;
+  }
+
+  .gnome-btn-primary {
+    background: linear-gradient(135deg, #2e7d32, #3a9e40);
+    color: white;
+    border: none;
+    transition: opacity 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .gnome-btn-primary:hover {
+    opacity: 0.92;
+    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.25);
   }
 }
