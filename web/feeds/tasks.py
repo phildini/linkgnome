@@ -33,30 +33,34 @@ async def _fetch_user_feeds_async(user_id: int) -> None:
         cache_db = LinkgnomeDB(db_path=Path(settings.LINKGNOME_CACHE_PATH))
         cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
 
-        mastodon = await sync_to_async(getattr)(user, "mastodon_account", None)
-        if mastodon and mastodon.is_active:
+        mastodon_accounts = await sync_to_async(list)(
+            user.mastodon_accounts.filter(is_active=True)
+        )
+        for acct in mastodon_accounts:
             from linkgnome.fetchers.mastodon import MastodonFetcher
-            token = mastodon.access_token
-            logger.info("Mastodon token length: %s", len(token) if token else 0)
+            token = acct.access_token
+            logger.info("Mastodon %s: token length %s", acct.instance_url, len(token) if token else 0)
             fetcher = MastodonFetcher(
-                instance_url=mastodon.instance_url,
+                instance_url=acct.instance_url,
                 access_token=token,
             )
             m_posts = await fetcher.fetch_timeline(cutoff=cutoff)
-            logger.info("Mastodon: %d posts", len(m_posts))
+            logger.info("Mastodon %s: %d posts", acct.instance_url, len(m_posts))
             posts.extend(m_posts)
 
-        bluesky = await sync_to_async(getattr)(user, "bluesky_account", None)
-        if bluesky and bluesky.is_active:
+        bluesky_accounts = await sync_to_async(list)(
+            user.bluesky_accounts.filter(is_active=True)
+        )
+        for acct in bluesky_accounts:
             from linkgnome.fetchers.bluesky import BlueskyFetcher
-            pw = bluesky.app_password
-            logger.info("Bluesky password length: %s", len(pw) if pw else 0)
+            pw = acct.app_password
+            logger.info("Bluesky %s: password length %s", acct.handle, len(pw) if pw else 0)
             fetcher = BlueskyFetcher(
-                handle=bluesky.handle,
+                handle=acct.handle,
                 app_password=pw,
             )
             b_posts = await fetcher.fetch_timeline(cutoff=cutoff)
-            logger.info("Bluesky: %d posts", len(b_posts))
+            logger.info("Bluesky %s: %d posts", acct.handle, len(b_posts))
             posts.extend(b_posts)
 
         from linkgnome.scorer import score_links

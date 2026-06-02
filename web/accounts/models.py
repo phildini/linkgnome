@@ -33,15 +33,19 @@ class EncryptedField(models.TextField):
 class User(AbstractUser):
     plan = models.CharField(max_length=20, default="free", choices=[
         ("free", "Free"),
-        ("pro", "Pro"),
+        ("gnome", "Gnome"),
     ])
     stripe_customer_id = models.CharField(max_length=100, blank=True)
     last_refresh_at = models.DateTimeField(null=True, blank=True)
     email_verified = models.BooleanField(default=False)
 
     @property
-    def max_social_accounts(self) -> int:
-        return {"free": 1, "pro": 2}[self.plan]
+    def max_mastodon_accounts(self) -> int:
+        return {"free": 1, "gnome": 999}[self.plan]
+
+    @property
+    def max_bluesky_accounts(self) -> int:
+        return {"free": 1, "gnome": 999}[self.plan]
 
     @property
     def refresh_cooldown_seconds(self) -> int:
@@ -60,7 +64,7 @@ class InstanceApp(models.Model):
 
 
 class MastodonAccount(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="mastodon_account")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="mastodon_accounts")
     instance_url = models.CharField(max_length=255)
     access_token = EncryptedField()
     mastodon_user_id = models.CharField(max_length=100)
@@ -69,12 +73,18 @@ class MastodonAccount(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        unique_together = ["user", "instance_url", "mastodon_user_id"]
+
 
 class BlueskyAccount(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="bluesky_account")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="bluesky_accounts")
     handle = models.CharField(max_length=255)
     app_password = EncryptedField()
     did = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ["user", "handle"]

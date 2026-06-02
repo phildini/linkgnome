@@ -28,8 +28,8 @@ def dashboard(request):
         "links": page,
         "can_refresh": can_refresh,
         "cooldown_remaining": cooldown_remaining,
-        "has_mastodon": hasattr(user, "mastodon_account"),
-        "has_bluesky": hasattr(user, "bluesky_account"),
+        "has_mastodon": user.mastodon_accounts.filter(is_active=True).exists(),
+        "has_bluesky": user.bluesky_accounts.filter(is_active=True).exists(),
         "is_activated": user.is_fully_activated,
         "current_platform": platform,
     })

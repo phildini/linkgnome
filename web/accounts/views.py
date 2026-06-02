@@ -101,13 +101,15 @@ def logout_view(request):
 @login_required
 def settings_view(request):
     user = request.user
-    mastodon = getattr(user, "mastodon_account", None)
-    bluesky = getattr(user, "bluesky_account", None)
+    mastodon_accounts = user.mastodon_accounts.all()
+    bluesky_accounts = user.bluesky_accounts.all()
 
     return render(request, "accounts/settings.html", {
-        "mastodon": mastodon,
-        "bluesky": bluesky,
+        "mastodon_accounts": mastodon_accounts,
+        "bluesky_accounts": bluesky_accounts,
         "user": user,
+        "can_add_mastodon": user.mastodon_accounts.filter(is_active=True).count() < user.max_mastodon_accounts,
+        "can_add_bluesky": user.bluesky_accounts.filter(is_active=True).count() < user.max_bluesky_accounts,
     })
 
 
@@ -116,17 +118,22 @@ def connect_mastodon(request):
     if not request.user.is_fully_activated:
         return redirect("accounts:settings")
 
-    if getattr(request.user, "mastodon_account", None):
-        return redirect("accounts:settings")
+    user = request.user
+
+    if user.mastodon_accounts.filter(is_active=True).count() >= user.max_mastodon_accounts:
+        return render(request, "accounts/plan_limit.html", {
+            "platform": "Mastodon",
+            "plan": "Gnome",
+        })
 
     if request.method == "POST":
         form = InstanceUrlForm(request.POST)
         if form.is_valid():
             instance_url = form.cleaned_data["instance_url"]
-            clear_instance_cache(instance_url)
             callback_url = request.build_absolute_uri(
                 reverse("accounts:mastodon_callback")
             )
+            clear_instance_cache(instance_url)
             try:
                 app = register_instance_app(instance_url, callback_url)
             except Exception as e:
@@ -177,21 +184,17 @@ def mastodon_callback(request):
 
     mastodon_user_id = token_data.get("id", "")
     mastodon_username = token_data.get("username", "")
-
-    # Try to extract username from the me field if available
     me_field = token_data.get("me", "")
     if not mastodon_username and me_field:
         mastodon_username = me_field.rstrip("/").split("/")[-1]
 
-    MastodonAccount.objects.update_or_create(
+    MastodonAccount.objects.create(
         user=request.user,
-        defaults={
-            "instance_url": state["instance_url"],
-            "access_token": token_data["access_token"],
-            "mastodon_user_id": mastodon_user_id,
-            "mastodon_username": mastodon_username,
-            "is_active": True,
-        },
+        instance_url=state["instance_url"],
+        access_token=token_data["access_token"],
+        mastodon_user_id=mastodon_user_id,
+        mastodon_username=mastodon_username,
+        is_active=True,
     )
     return redirect("feeds:dashboard")
 
@@ -201,8 +204,13 @@ def connect_bluesky(request):
     if not request.user.is_fully_activated:
         return redirect("accounts:settings")
 
-    if getattr(request.user, "bluesky_account", None):
-        return redirect("accounts:settings")
+    user = request.user
+
+    if user.bluesky_accounts.filter(is_active=True).count() >= user.max_bluesky_accounts:
+        return render(request, "accounts/plan_limit.html", {
+            "platform": "Bluesky",
+            "plan": "Gnome",
+        })
 
     if request.method == "POST":
         form = BlueskyConnectForm(request.POST)
@@ -216,14 +224,12 @@ def connect_bluesky(request):
                 form.add_error(None, f"Verification failed: {e}")
                 return render(request, "accounts/connect_bluesky.html", {"form": form})
 
-            BlueskyAccount.objects.update_or_create(
+            BlueskyAccount.objects.create(
                 user=request.user,
-                defaults={
-                    "handle": handle,
-                    "app_password": app_password,
-                    "did": session.get("did", ""),
-                    "is_active": True,
-                },
+                handle=handle,
+                app_password=app_password,
+                did=session.get("did", ""),
+                is_active=True,
             )
             return redirect("feeds:dashboard")
     else:
@@ -233,18 +239,20 @@ def connect_bluesky(request):
 
 
 @login_required
-def disconnect_mastodon(request):
+def disconnect_mastodon(request, account_id):
     if request.method == "POST":
-        account = getattr(request.user, "mastodon_account", None)
+        account = request.user.mastodon_accounts.filter(id=account_id).first()
         if account:
-            account.delete()
+            account.is_active = False
+            account.save()
     return redirect("accounts:settings")
 
 
 @login_required
-def disconnect_bluesky(request):
+def disconnect_bluesky(request, account_id):
     if request.method == "POST":
-        account = getattr(request.user, "bluesky_account", None)
+        account = request.user.bluesky_accounts.filter(id=account_id).first()
         if account:
-            account.delete()
+            account.is_active = False
+            account.save()
     return redirect("accounts:settings")

@@ -1,15 +1,17 @@
-"""Billing models — stub for future Stripe integration."""
+"""Billing models for Stripe integration."""
 from django.db import models
-from django.conf import settings
 
 
-class Plan(models.Model):
-    name = models.CharField(max_length=50, unique=True)
+class Price(models.Model):
+    name = models.CharField(max_length=50)
     stripe_price_id = models.CharField(max_length=100, blank=True)
-    max_social_accounts = models.IntegerField(default=1)
-    refresh_cooldown_seconds = models.IntegerField(default=1800)
-    history_days = models.IntegerField(default=1)
-    price_display = models.CharField(max_length=50, blank=True)
+    amount_dollars = models.IntegerField()
+    interval = models.CharField(max_length=10, choices=[
+        ("month", "Monthly"),
+        ("year", "Yearly"),
+    ])
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} (${self.amount_dollars}/{self.interval})"

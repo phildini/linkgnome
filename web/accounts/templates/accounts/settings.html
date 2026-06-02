@@ -20,46 +20,62 @@
     <div class="card-body">
       <h2 class="card-title">Connected Accounts</h2>
 
-      <div class="flex items-center justify-between py-3 border-b">
-        <div>
-          <p class="font-medium">Mastodon</p>
-          {% if mastodon %}
-            <span class="text-sm text-base-content/60">{{ mastodon.instance_url }} ({{ mastodon.mastodon_username }})</span>
+      <div class="py-3 border-b">
+        <p class="font-medium mb-2">Mastodon</p>
+        {% for acct in mastodon_accounts %}
+          <div class="flex items-center justify-between py-1.5">
+            <div class="text-sm">
+              <span>{{ acct.instance_url }} ({{ acct.mastodon_username }})</span>
+              {% if not acct.is_active %}
+                <span class="badge badge-warning badge-xs ml-2">Frozen</span>
+              {% endif %}
+            </div>
+            {% if acct.is_active %}
+              <form method="post" action="{% url 'accounts:disconnect_mastodon' acct.id %}">
+                {% csrf_token %}
+                <button class="btn btn-outline btn-error btn-xs">Disconnect</button>
+              </form>
+            {% endif %}
+          </div>
+        {% empty %}
+          <p class="text-sm text-base-content/60 py-1">Not connected</p>
+        {% endfor %}
+        {% if user.is_fully_activated %}
+          {% if can_add_mastodon %}
+            <a href="{% url 'accounts:connect_mastodon' %}" class="btn btn-primary btn-xs mt-2">+ Add Mastodon</a>
           {% else %}
-            <span class="text-sm text-base-content/60">Not connected</span>
+            <p class="text-xs text-base-content/50 mt-2">Upgrade to <a href="#" class="link link-primary">Gnome</a> ($5/mo) to connect more accounts.</p>
           {% endif %}
-        </div>
-        <div>
-          {% if mastodon %}
-            <form method="post" action="{% url 'accounts:disconnect_mastodon' %}">
-              {% csrf_token %}
-              <button class="btn btn-outline btn-error btn-sm">Disconnect</button>
-            </form>
-          {% elif user.is_fully_activated %}
-            <a href="{% url 'accounts:connect_mastodon' %}" class="btn btn-primary btn-sm">Connect</a>
-          {% endif %}
-        </div>
+        {% endif %}
       </div>
 
-      <div class="flex items-center justify-between py-3">
-        <div>
-          <p class="font-medium">Bluesky</p>
-          {% if bluesky %}
-            <span class="text-sm text-base-content/60">{{ bluesky.handle }}</span>
+      <div class="py-3">
+        <p class="font-medium mb-2">Bluesky</p>
+        {% for acct in bluesky_accounts %}
+          <div class="flex items-center justify-between py-1.5">
+            <div class="text-sm">
+              <span>{{ acct.handle }}</span>
+              {% if not acct.is_active %}
+                <span class="badge badge-warning badge-xs ml-2">Frozen</span>
+              {% endif %}
+            </div>
+            {% if acct.is_active %}
+              <form method="post" action="{% url 'accounts:disconnect_bluesky' acct.id %}">
+                {% csrf_token %}
+                <button class="btn btn-outline btn-error btn-xs">Disconnect</button>
+              </form>
+            {% endif %}
+          </div>
+        {% empty %}
+          <p class="text-sm text-base-content/60 py-1">Not connected</p>
+        {% endfor %}
+        {% if user.is_fully_activated %}
+          {% if can_add_bluesky %}
+            <a href="{% url 'accounts:connect_bluesky' %}" class="btn btn-primary btn-xs mt-2">+ Add Bluesky</a>
           {% else %}
-            <span class="text-sm text-base-content/60">Not connected</span>
+            <p class="text-xs text-base-content/50 mt-2">Upgrade to <a href="#" class="link link-primary">Gnome</a> ($5/mo) to connect more accounts.</p>
           {% endif %}
-        </div>
-        <div>
-          {% if bluesky %}
-            <form method="post" action="{% url 'accounts:disconnect_bluesky' %}">
-              {% csrf_token %}
-              <button class="btn btn-outline btn-error btn-sm">Disconnect</button>
-            </form>
-          {% elif user.is_fully_activated %}
-            <a href="{% url 'accounts:connect_bluesky' %}" class="btn btn-primary btn-sm">Connect</a>
-          {% endif %}
-        </div>
+        {% endif %}
       </div>
     </div>
   </div>

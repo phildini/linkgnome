@@ -12,7 +12,7 @@ urlpatterns = [
     path("settings/", views.settings_view, name="settings"),
     path("mastodon/connect/", views.connect_mastodon, name="connect_mastodon"),
     path("mastodon/callback/", views.mastodon_callback, name="mastodon_callback"),
-    path("mastodon/disconnect/", views.disconnect_mastodon, name="disconnect_mastodon"),
+    path("mastodon/disconnect/<int:account_id>/", views.disconnect_mastodon, name="disconnect_mastodon"),
     path("bluesky/connect/", views.connect_bluesky, name="connect_bluesky"),
-    path("bluesky/disconnect/", views.disconnect_bluesky, name="disconnect_bluesky"),
+    path("bluesky/disconnect/<int:account_id>/", views.disconnect_bluesky, name="disconnect_bluesky"),
 ]

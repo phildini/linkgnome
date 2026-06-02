@@ -26,9 +26,21 @@ class UserModelTest(TestCase):
         user = User.objects.create_user(username="test", email="a@b.com", password="x")
         assert user.refresh_cooldown_seconds == 300
 
-    def test_max_social_accounts_free(self):
+    def test_max_mastodon_accounts_free(self):
         user = User.objects.create_user(username="test", email="a@b.com", password="x")
-        assert user.max_social_accounts == 1
+        assert user.max_mastodon_accounts == 1
+
+    def test_max_bluesky_accounts_free(self):
+        user = User.objects.create_user(username="test", email="a@b.com", password="x")
+        assert user.max_bluesky_accounts == 1
+
+    def test_max_mastodon_accounts_gnome(self):
+        user = User.objects.create_user(username="g", email="g@b.com", password="x", plan="gnome")
+        assert user.max_mastodon_accounts == 999
+
+    def test_max_bluesky_accounts_gnome(self):
+        user = User.objects.create_user(username="g", email="g@b.com", password="x", plan="gnome")
+        assert user.max_bluesky_accounts == 999
 
 
 class MastodonAccountTest(TestCase):
@@ -46,15 +58,26 @@ class MastodonAccountTest(TestCase):
         assert acct.is_active is True
         assert acct.access_token == "test_token_12345"
 
-    def test_one_to_one_user(self):
+    def test_foreign_key_user(self):
         user = User.objects.create_user(username="t", email="a@b.com", password="x")
-        MastodonAccount.objects.create(
+        acct = MastodonAccount.objects.create(
             user=user, instance_url="https://a", access_token="t",
             mastodon_user_id="1", mastodon_username="u",
         )
-        assert hasattr(user, "mastodon_account")
-        acct = getattr(user, "mastodon_account", None)
-        assert acct is not None
+        assert user.mastodon_accounts.count() == 1
+        assert user.mastodon_accounts.first() == acct
+
+    def test_multiple_accounts(self):
+        user = User.objects.create_user(username="t", email="a@b.com", password="x")
+        MastodonAccount.objects.create(
+            user=user, instance_url="https://a", access_token="t1",
+            mastodon_user_id="1", mastodon_username="u1",
+        )
+        MastodonAccount.objects.create(
+            user=user, instance_url="https://b", access_token="t2",
+            mastodon_user_id="2", mastodon_username="u2",
+        )
+        assert user.mastodon_accounts.count() == 2
 
 
 class BlueskyAccountTest(TestCase):

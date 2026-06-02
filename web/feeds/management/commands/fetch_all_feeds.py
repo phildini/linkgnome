@@ -27,8 +27,8 @@ class Command(BaseCommand):
         for user in users:
             signup_minute = user.date_joined.minute
             if window_start <= signup_minute < window_end:
-                has_mastodon = getattr(user, "mastodon_account", None)
-                has_bluesky = getattr(user, "bluesky_account", None)
+                has_mastodon = user.mastodon_accounts.filter(is_active=True).exists()
+                has_bluesky = user.bluesky_accounts.filter(is_active=True).exists()
                 if has_mastodon or has_bluesky:
                     async_task("feeds.tasks.fetch_user_feeds", user.id)
                     count += 1
