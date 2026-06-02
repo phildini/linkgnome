@@ -16,7 +16,7 @@
             </div>
             <div class="min-w-0 flex-1">
               {% if link.title and link.title != link.url %}
-                <p class="font-medium text-sm leading-snug">{{ link.title }}</p>
+                <p class="font-medium text-sm leading-snug truncate">{{ link.title }}</p>
               {% endif %}
               <a href="{{ link.url }}"
                  class="text-xs link link-primary truncate block"
@@ -32,15 +32,7 @@
                   </a>
                   {% if link.author_post_urls|length > 1 %}
                     <span class="text-base-content/30">+{{ link.author_post_urls|length|add:"-1" }}</span>
-{% endif %}
-
-  <div id="feed-poll"
-       hx-get="{% url 'feeds:feed_status' %}?platform={{ current_platform }}"
-       hx-trigger="startPolling from:body"
-       hx-target="#feed-table"
-       hx-swap="outerHTML">
-  </div>
-</div>
+                  {% endif %}
                 {% endif %}
                 <span class="ml-auto whitespace-nowrap" title="Posts · Boosts · Likes">
                   📝{{ link.post_count }} · 🔄{{ link.boost_count }} · ❤️{{ link.like_count }}
@@ -87,3 +79,11 @@
     <p class="text-sm mt-2">Connect your accounts and refresh to get started.</p>
   </div>
 {% endif %}
+</div>
+
+<div id="feed-poll"
+     hx-get="{% url 'feeds:feed_status' %}?platform={{ current_platform }}"
+     hx-trigger="startPolling from:body"
+     hx-target="#feed-table"
+     hx-swap="outerHTML">
+</div>
