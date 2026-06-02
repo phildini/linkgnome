@@ -5,39 +5,45 @@
   <div class="flex items-center justify-between gap-4">
     <div class="flex items-center gap-2">
       <h1 class="text-2xl font-bold">Your Links</h1>
-      <div class="join">
+      <div class="join" role="group" aria-label="Filter by platform">
         <a href="{% url 'feeds:dashboard' %}?platform=all"
-           class="btn btn-xs join-item {% if current_platform == 'all' %}btn-active{% endif %}"
+           class="btn btn-xs join-item gnome-btn-filter {% if current_platform == 'all' %}btn-active{% endif %}"
            hx-get="{% url 'feeds:feed_table' %}?platform=all"
            hx-target="#feed-table"
            hx-swap="outerHTML"
-           hx-push-url="{% url 'feeds:dashboard' %}?platform=all">All</a>
+           hx-push-url="{% url 'feeds:dashboard' %}?platform=all"
+           aria-label="Show all links"
+           aria-pressed="{% if current_platform == 'all' %}true{% else %}false{% endif %}">All</a>
         <a href="{% url 'feeds:dashboard' %}?platform=mastodon"
-           class="btn btn-xs join-item {% if current_platform == 'mastodon' %}btn-active{% endif %}"
+           class="btn btn-xs join-item gnome-btn-filter {% if current_platform == 'mastodon' %}btn-active{% endif %}"
            hx-get="{% url 'feeds:feed_table' %}?platform=mastodon"
            hx-target="#feed-table"
            hx-swap="outerHTML"
-           hx-push-url="{% url 'feeds:dashboard' %}?platform=mastodon">M</a>
+           hx-push-url="{% url 'feeds:dashboard' %}?platform=mastodon"
+           aria-label="Show only Mastodon links"
+           aria-pressed="{% if current_platform == 'mastodon' %}true{% else %}false{% endif %}">M</a>
         <a href="{% url 'feeds:dashboard' %}?platform=bluesky"
-           class="btn btn-xs join-item {% if current_platform == 'bluesky' %}btn-active{% endif %}"
+           class="btn btn-xs join-item gnome-btn-filter {% if current_platform == 'bluesky' %}btn-active{% endif %}"
            hx-get="{% url 'feeds:feed_table' %}?platform=bluesky"
            hx-target="#feed-table"
            hx-swap="outerHTML"
-           hx-push-url="{% url 'feeds:dashboard' %}?platform=bluesky">B</a>
+           hx-push-url="{% url 'feeds:dashboard' %}?platform=bluesky"
+           aria-label="Show only Bluesky links"
+           aria-pressed="{% if current_platform == 'bluesky' %}true{% else %}false{% endif %}">B</a>
       </div>
     </div>
-    <div id="refresh-area">
+    <div id="refresh-area" role="region" aria-label="Refresh controls">
       {% include "feeds/refresh_button.html" %}
     </div>
   </div>
 
   {% if not is_activated %}
-    <div class="alert alert-warning">
+    <div class="alert alert-warning" role="alert">
       Verify your email to connect social accounts and fetch links.
       <a href="{% url 'accounts:settings' %}" class="link link-primary ml-2">Settings</a>
     </div>
   {% elif not has_mastodon and not has_bluesky %}
-    <div class="alert alert-info">
+    <div class="alert alert-info" role="status">
       Connect a Mastodon or Bluesky account to get started.
       <a href="{% url 'accounts:settings' %}" class="link link-primary ml-2">Settings</a>
     </div>

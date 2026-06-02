@@ -1,18 +1,19 @@
-<div id="feed-table">
+{% load static %}
+<div id="feed-table" role="region" aria-label="Ranked links from your feeds" aria-live="polite">
 {% if links %}
   <div class="space-y-2">
     {% for link in links %}
-      <div class="card card-compact bg-base-100 shadow-sm border border-base-200">
+      <article class="card card-compact bg-base-100 shadow-sm border border-base-200 gnome-card" tabindex="-1" aria-label="Link ranked {{ link.score|floatformat:0 }} from {{ link.platform }}">
         <div class="card-body px-3 py-2.5">
           <div class="flex items-start gap-2">
-            <div class="flex items-center gap-1 shrink-0 mt-0.5">
+            <div class="flex items-center gap-1 shrink-0 mt-0.5" role="list" aria-label="Platform and score">
               {% if "mastodon" in link.platform %}
-                <span class="badge badge-sm font-mono" style="background: #6364ff; color: white;">M</span>
+                <span class="badge badge-sm font-mono gnome-badge-m" role="listitem" aria-label="Mastodon">M</span>
               {% endif %}
               {% if "bluesky" in link.platform %}
-                <span class="badge badge-sm font-mono" style="background: #0285ff; color: white;">B</span>
+                <span class="badge badge-sm font-mono gnome-badge-b" role="listitem" aria-label="Bluesky">B</span>
               {% endif %}
-              <div class="badge badge-accent badge-sm font-mono">{{ link.score|floatformat:0 }}</div>
+              <span class="badge badge-sm font-mono gnome-badge-score" role="listitem" aria-label="Score: {{ link.score|floatformat:0 }}">{{ link.score|floatformat:0 }}</span>
             </div>
             <div class="min-w-0 flex-1">
               {% if link.title and link.title != link.url %}
@@ -21,69 +22,76 @@
               <a href="{{ link.url }}"
                  class="text-xs link link-primary truncate block"
                  target="_blank"
-                 rel="noopener">
+                 rel="noopener noreferrer"
+                 aria-label="Open article: {{ link.title|default:link.url }}">
                 {{ link.url }}
               </a>
-              <div class="flex items-center gap-1.5 text-xs text-base-content/50 mt-0.5 flex-wrap">
-                <span>{{ link.author_names }}</span>
+              <div class="flex items-center gap-1.5 text-xs text-base-content/60 mt-0.5 flex-wrap">
+                <span aria-label="Shared by {{ link.author_names }}">{{ link.author_names }}</span>
                 {% if link.author_post_urls %}
-                  <a href="{{ link.author_post_urls.0 }}" target="_blank" rel="noopener" class="link link-secondary whitespace-nowrap">
+                  <span aria-hidden="true">·</span>
+                  <a href="{{ link.author_post_urls.0 }}"
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     class="link link-secondary whitespace-nowrap"
+                     aria-label="View original post, {{ link.last_posted_at|default:link.last_seen_at|timesince }} ago">
                     {% with post_time=link.last_posted_at|default:link.last_seen_at %}{% with ago=post_time|timesince %}{% if ago == "0 minutes" %}just now{% else %}{{ ago }} ago{% endif %}{% endwith %}{% endwith %}
                   </a>
                   {% if link.author_post_urls|length > 1 %}
-                    <span class="text-base-content/30">+{{ link.author_post_urls|length|add:"-1" }}</span>
+                    <span class="text-base-content/30" aria-label="{{ link.author_post_urls|length }} posts shared this link">+{{ link.author_post_urls|length|add:"-1" }}</span>
                   {% endif %}
                 {% endif %}
-                <span class="ml-auto whitespace-nowrap" title="Posts · Boosts · Likes">
-                  📝{{ link.post_count }} · 🔄{{ link.boost_count }} · ❤️{{ link.like_count }}
+                <span class="ml-auto whitespace-nowrap" role="list" aria-label="Engagement: {{ link.post_count }} posts, {{ link.boost_count }} boosts, {{ link.like_count }} likes">
+                  <span role="listitem" aria-label="{{ link.post_count }} posts">📝{{ link.post_count }}</span>
+                  <span aria-hidden="true"> · </span>
+                  <span role="listitem" aria-label="{{ link.boost_count }} boosts">🔄{{ link.boost_count }}</span>
+                  <span aria-hidden="true"> · </span>
+                  <span role="listitem" aria-label="{{ link.like_count }} likes">❤️{{ link.like_count }}</span>
                 </span>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </article>
     {% endfor %}
   </div>
 
   {% if links.has_other_pages %}
-    <div class="flex justify-center gap-2 mt-6">
+    <nav class="flex justify-center gap-2 mt-6" aria-label="Pagination">
       {% if links.has_previous %}
-        <button class="btn btn-outline btn-sm"
-                hx-get="{% url 'feeds:feed_table' %}?platform={{ current_platform }}&page={{ links.previous_page_number }}"
-                hx-target="#feed-table"
-                hx-swap="outerHTML"
-                hx-push-url="true">
+        <a class="btn btn-outline btn-sm gnome-btn-filter"
+           hx-get="{% url 'feeds:feed_table' %}?platform={{ current_platform }}&page={{ links.previous_page_number }}"
+           hx-target="#feed-table"
+           hx-swap="outerHTML"
+           hx-push-url="true"
+           href="{% url 'feeds:dashboard' %}?platform={{ current_platform }}&page={{ links.previous_page_number }}"
+           aria-label="Previous page">
           ← Previous
-        </button>
+        </a>
       {% endif %}
 
-      <span class="self-center text-sm text-base-content/60">
+      <span class="self-center text-sm text-base-content/60" aria-current="page">
         Page {{ links.number }} of {{ links.paginator.num_pages }}
       </span>
 
       {% if links.has_next %}
-        <button class="btn btn-outline btn-sm"
-                hx-get="{% url 'feeds:feed_table' %}?platform={{ current_platform }}&page={{ links.next_page_number }}"
-                hx-target="#feed-table"
-                hx-swap="outerHTML"
-                hx-push-url="true">
+        <a class="btn btn-outline btn-sm gnome-btn-filter"
+           hx-get="{% url 'feeds:feed_table' %}?platform={{ current_platform }}&page={{ links.next_page_number }}"
+           hx-target="#feed-table"
+           hx-swap="outerHTML"
+           hx-push-url="true"
+           href="{% url 'feeds:dashboard' %}?platform={{ current_platform }}&page={{ links.next_page_number }}"
+           aria-label="Next page">
           Next →
-        </button>
+        </a>
       {% endif %}
-    </div>
+    </nav>
   {% endif %}
 
 {% else %}
-  <div class="text-center py-12 text-base-content/40">
+  <div class="text-center py-12 text-base-content/40" aria-label="No links yet">
     <p class="text-lg">No links yet</p>
     <p class="text-sm mt-2">Connect your accounts and refresh to get started.</p>
   </div>
 {% endif %}
-</div>
-
-<div id="feed-poll"
-     hx-get="{% url 'feeds:feed_status' %}?platform={{ current_platform }}"
-     hx-trigger="startPolling from:body"
-     hx-target="#feed-table"
-     hx-swap="outerHTML">
 </div>

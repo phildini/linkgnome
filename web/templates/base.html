@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en" data-theme="lemonade">
+<html lang="en" data-theme="gnome">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,28 +11,41 @@
     document.addEventListener('htmx:configRequest', (e) => {
       e.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
     });
+    document.addEventListener('htmx:afterSwap', (e) => {
+      if (e.target.id === 'feed-table') {
+        const firstCard = e.target.querySelector('[tabindex="-1"]');
+        if (firstCard) firstCard.focus();
+      }
+    });
   </script>
 </head>
-<body class="min-h-screen bg-base-300">
-  <div class="navbar bg-base-100 shadow-sm mb-6">
-    <div class="flex-1">
-      <a href="{% url 'feeds:dashboard' %}" class="btn btn-ghost text-xl">LinkGnome</a>
-    </div>
-    <div class="flex-none gap-2">
-      {% if user.is_authenticated %}
-        <a href="{% url 'accounts:settings' %}" class="btn btn-ghost btn-sm">Settings</a>
-        <form method="post" action="{% url 'accounts:logout' %}">
-          {% csrf_token %}
-          <button class="btn btn-ghost btn-sm">Log Out</button>
-        </form>
-      {% else %}
-        <a href="{% url 'accounts:login' %}" class="btn btn-ghost btn-sm">Log In</a>
-        <a href="{% url 'accounts:signup' %}" class="btn btn-primary btn-sm">Sign Up</a>
-      {% endif %}
-    </div>
-  </div>
+<body class="min-h-screen">
+  <a href="#main-content" class="skip-link">Skip to content</a>
 
-  <main class="container mx-auto px-4 pb-12">
+  <nav class="gnome-nav" aria-label="Main navigation">
+    <div class="container mx-auto px-4">
+      <div class="flex items-center justify-between h-14">
+        <a href="{% url 'feeds:dashboard' %}" class="flex items-center gap-2 text-lg font-bold text-base-content no-underline hover:opacity-80 transition-opacity">
+          <span aria-hidden="true" class="text-xl">🌿</span>
+          LinkGnome
+        </a>
+        <div class="flex items-center gap-2">
+          {% if user.is_authenticated %}
+            <a href="{% url 'accounts:settings' %}" class="btn btn-ghost btn-xs" aria-label="Account settings">Settings</a>
+            <form method="post" action="{% url 'accounts:logout' %}">
+              {% csrf_token %}
+              <button class="btn btn-ghost btn-xs" aria-label="Log out">Log Out</button>
+            </form>
+          {% else %}
+            <a href="{% url 'accounts:login' %}" class="btn btn-ghost btn-xs">Log In</a>
+            <a href="{% url 'accounts:signup' %}" class="btn btn-primary btn-xs">Sign Up</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main-content" class="container mx-auto px-4 pb-12 pt-6" tabindex="-1">
     {% block content %}{% endblock %}
   </main>
 </body>

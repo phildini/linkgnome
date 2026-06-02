@@ -1,3 +1,115 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  html:focus-visible {
+    outline: 3px solid #2e7d32;
+    outline-offset: 2px;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid #2e7d32;
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+
+  body {
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(46, 125, 50, 0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(249, 168, 37, 0.03) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(85, 139, 47, 0.03) 0%, transparent 50%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  .gnome-nav {
+    border-bottom: 1px solid #d6d9c5;
+    background: linear-gradient(180deg, rgba(245, 247, 238, 0.95), rgba(245, 247, 238, 0.85));
+    backdrop-filter: blur(8px);
+  }
+
+  .gnome-card {
+    border-left: 3px solid #2e7d32;
+    transition: border-left-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .gnome-card:hover {
+    border-left-color: #f9a825;
+    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.08);
+  }
+
+  .gnome-card:focus-within {
+    border-left-color: #f9a825;
+    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.12);
+  }
+
+  .gnome-badge-m {
+    background: linear-gradient(135deg, #6364ff, #7c6dff);
+    color: white;
+  }
+
+  .gnome-badge-b {
+    background: linear-gradient(135deg, #0285ff, #4a9eff);
+    color: white;
+  }
+
+  .gnome-badge-score {
+    background: linear-gradient(135deg, #2e7d32, #3a9e40);
+    color: white;
+    font-weight: 600;
+  }
+
+  .gnome-btn-filter {
+    border: 1px solid #d6d9c5;
+    color: #4a5e40;
+    background: transparent;
+    transition: all 0.12s ease;
+  }
+
+  .gnome-btn-filter:hover {
+    background: rgba(46, 125, 50, 0.08);
+    border-color: #2e7d32;
+  }
+
+  .gnome-btn-filter.btn-active {
+    background: #2e7d32;
+    border-color: #2e7d32;
+    color: white;
+  }
+
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 0.5rem;
+    z-index: 1000;
+    padding: 0.5rem 1rem;
+    background: #2e7d32;
+    color: white;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    transition: top 0.15s;
+  }
+
+  .skip-link:focus {
+    top: 0.5rem;
+  }
+}
