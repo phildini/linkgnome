@@ -1,0 +1,76 @@
+name: PR Preview
+on:
+  pull_request:
+    types: [opened, synchronize, closed]
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set app name
+        id: names
+        run: |
+          echo "app=linkgnome-pr-${{ github.event.number }}" >> $GITHUB_OUTPUT
+          echo "url=https://linkgnome-pr-${{ github.event.number }}.fly.dev" >> $GITHUB_OUTPUT
+
+      - name: Create app if needed
+        if: github.event.action != 'closed'
+        continue-on-error: true
+        run: |
+          fly launch --no-deploy \
+            --name "${{ steps.names.outputs.app }}" \
+            --region iad \
+            --config web/fly.toml \
+            --copy-config \
+            --now
+
+      - name: Prepare LiteFS volume
+        if: github.event.action != 'closed'
+        continue-on-error: true
+        run: |
+          fly volumes create litefs_data \
+            --app "${{ steps.names.outputs.app }}" \
+            --size 1 \
+            --region iad || true
+
+      - name: Set secrets
+        if: github.event.action != 'closed'
+        run: |
+          fly secrets set \
+            --app "${{ steps.names.outputs.app }}" \
+            DJANGO_SECRET_KEY="$(openssl rand -hex 32)" \
+            DJANGO_DEBUG="True" \
+            ALLOWED_HOSTS="*" \
+            CSRF_TRUSTED_ORIGINS="${{ steps.names.outputs.url }}"
+
+      - name: Deploy
+        if: github.event.action != 'closed'
+        run: |
+          fly deploy \
+            --app "${{ steps.names.outputs.app }}" \
+            --config web/fly.toml \
+            --strategy immediate
+
+      - name: Comment PR
+        if: github.event.action != 'closed'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = '${{ steps.names.outputs.url }}';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Preview deployed: [${url}](${url})\n\nDestroy with \`fly apps destroy ${{ steps.names.outputs.app }} --yes\``
+            });
+
+      - name: Destroy preview
+        if: github.event.action == 'closed'
+        run: |
+          fly apps destroy "${{ steps.names.outputs.app }}" --yes || true
