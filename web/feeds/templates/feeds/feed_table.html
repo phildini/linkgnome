@@ -48,7 +48,7 @@
     <div class="flex justify-center gap-2 mt-6">
       {% if links.has_previous %}
         <button class="btn btn-outline btn-sm"
-                hx-get="{% url 'feeds:feed_table' %}?page={{ links.previous_page_number }}"
+                hx-get="{% url 'feeds:feed_table' %}?platform={{ current_platform }}&page={{ links.previous_page_number }}"
                 hx-target="#feed-table"
                 hx-swap="outerHTML"
                 hx-push-url="true">
@@ -62,7 +62,7 @@
 
       {% if links.has_next %}
         <button class="btn btn-outline btn-sm"
-                hx-get="{% url 'feeds:feed_table' %}?page={{ links.next_page_number }}"
+                hx-get="{% url 'feeds:feed_table' %}?platform={{ current_platform }}&page={{ links.next_page_number }}"
                 hx-target="#feed-table"
                 hx-swap="outerHTML"
                 hx-push-url="true">

@@ -17,7 +17,8 @@ PAGE_SIZE = 25
 @login_required
 def dashboard(request):
     user = request.user
-    links = ScoredLink.objects.filter(user=user)
+    platform = request.GET.get("platform", "all")
+    links = _filter_links(user, platform)
     paginator = Paginator(links, PAGE_SIZE)
     page = paginator.get_page(request.GET.get("page", 1))
 
@@ -30,16 +31,30 @@ def dashboard(request):
         "has_mastodon": hasattr(user, "mastodon_account"),
         "has_bluesky": hasattr(user, "bluesky_account"),
         "is_activated": user.is_fully_activated,
+        "current_platform": platform,
     })
 
 
 @login_required
 def feed_table(request):
     user = request.user
-    links = ScoredLink.objects.filter(user=user)
+    platform = request.GET.get("platform", "all")
+    links = _filter_links(user, platform)
     paginator = Paginator(links, PAGE_SIZE)
     page = paginator.get_page(request.GET.get("page", 1))
-    return render(request, "feeds/feed_table.html", {"links": page})
+    return render(request, "feeds/feed_table.html", {
+        "links": page,
+        "current_platform": platform,
+    })
+
+
+def _filter_links(user, platform: str):
+    qs = ScoredLink.objects.filter(user=user)
+    if platform == "mastodon":
+        qs = qs.filter(platform__icontains="mastodon")
+    elif platform == "bluesky":
+        qs = qs.filter(platform__icontains="bluesky")
+    return qs
 
 
 @login_required
@@ -70,6 +85,7 @@ def refresh_feeds(request):
 @login_required
 def feed_status(request):
     user = request.user
+    platform = request.GET.get("platform", "all")
     latest_job = (
         FeedFetchJob.objects.filter(user=user)
         .order_by("-requested_at")
@@ -77,10 +93,13 @@ def feed_status(request):
     )
 
     if latest_job and latest_job.status == "completed":
-        links = ScoredLink.objects.filter(user=user)
+        links = _filter_links(user, platform)
         paginator = Paginator(links, PAGE_SIZE)
         page = paginator.get_page(1)
-        return render(request, "feeds/feed_table.html", {"links": page})
+        return render(request, "feeds/feed_table.html", {
+            "links": page,
+            "current_platform": platform,
+        })
 
     return HttpResponse(status=204)
 
