@@ -4,7 +4,15 @@
       <div class="card card-compact bg-base-100 shadow-sm border border-base-200">
         <div class="card-body px-3 py-2.5">
           <div class="flex items-start gap-2">
-            <div class="badge badge-accent badge-sm font-mono shrink-0 mt-0.5">{{ link.score|floatformat:0 }}</div>
+            <div class="flex items-center gap-1 shrink-0 mt-0.5">
+              {% if "mastodon" in link.platform %}
+                <span class="badge badge-sm font-mono" style="background: #6364ff; color: white;">M</span>
+              {% endif %}
+              {% if "bluesky" in link.platform %}
+                <span class="badge badge-sm font-mono" style="background: #0285ff; color: white;">B</span>
+              {% endif %}
+              <div class="badge badge-accent badge-sm font-mono">{{ link.score|floatformat:0 }}</div>
+            </div>
             <div class="min-w-0 flex-1">
               {% if link.title and link.title != link.url %}
                 <p class="font-medium text-sm leading-snug">{{ link.title }}</p>
