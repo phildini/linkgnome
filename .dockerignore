@@ -1,0 +1,11 @@
+.git
+__pycache__
+*.pyc
+.venv
+.env
+node_modules
+web/data/
+web/staticfiles/
+web/static/css/output.css
+web/.venv
+web/node_modules
