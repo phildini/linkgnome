@@ -140,10 +140,13 @@ def _get_toml_path() -> str:
 
 def _parse_toml_file(path: Path) -> dict[str, Any]:
     """Parse a TOML file manually (minimal implementation)."""
-    import tomllib
+    try:
+        import tomllib as toml_parser
+    except ImportError:
+        import tomli as toml_parser  # type: ignore[no-redef]
 
     with open(path, "rb") as f:
-        return tomllib.load(f)
+        return toml_parser.load(f)
 
 
 def _dict_to_toml(data: dict[str, Any], indent: int = 0) -> str:
