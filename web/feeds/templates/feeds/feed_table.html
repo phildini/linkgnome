@@ -28,7 +28,7 @@
                 <span>{{ link.author_names }}</span>
                 {% if link.author_post_urls %}
                   <a href="{{ link.author_post_urls.0 }}" target="_blank" rel="noopener" class="link link-secondary whitespace-nowrap">
-                    {% with ago=link.last_seen_at|timesince %}{% if ago == "0 minutes" %}just now{% else %}{{ ago }} ago{% endif %}{% endwith %}
+                    {% if link.last_posted_at %}{% with ago=link.last_posted_at|timesince %}{% if ago == "0 minutes" %}just now{% else %}{{ ago }} ago{% endif %}{% endwith %}{% endif %}
                   </a>
                   {% if link.author_post_urls|length > 1 %}
                     <span class="text-base-content/30">+{{ link.author_post_urls|length|add:"-1" }}</span>

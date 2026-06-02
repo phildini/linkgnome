@@ -44,6 +44,7 @@ class ScoredLink(models.Model):
     like_count = models.IntegerField(default=0)
     first_seen_at = models.DateTimeField(auto_now_add=True)
     last_seen_at = models.DateTimeField(auto_now=True)
+    last_posted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-score"]

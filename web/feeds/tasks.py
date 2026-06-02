@@ -120,6 +120,10 @@ def _store_scored_links_sync(user, scored_links) -> None:
                     )
                 ),
                 author_post_urls=[_extract_post_url(p) for p in (link.posts or []) if p],
+                last_posted_at=max(
+                    (p.created_at for p in (link.posts or []) if p and p.created_at),
+                    default=None,
+                ),
                 post_count=link.post_count,
                 boost_count=link.boost_count,
                 like_count=link.like_count,
