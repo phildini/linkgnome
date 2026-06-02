@@ -1,18 +1,6 @@
 #!/bin/bash
 set -e
 
-for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
-    if python -c "
-import os, sqlite3
-if os.path.getsize('/data/linkgnome.db') > 0:
-    sqlite3.connect('/data/linkgnome.db').execute('SELECT 1')
-    print('ready')
-" 2>/dev/null | grep -q ready; then
-        break
-    fi
-    sleep 1
-done
-
 python manage.py migrate --noinput
 
 python manage.py qcluster &
