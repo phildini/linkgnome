@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Settings — LinkGnome{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-8">
+  <h1 class="text-3xl font-bold">Settings</h1>
+
+  <div class="card bg-base-100 shadow-sm">
+    <div class="card-body">
+      <h2 class="card-title">Account</h2>
+      <p>Username: <strong>{{ user.username }}</strong></p>
+      <p>Email: <strong>{{ user.email }}</strong></p>
+      <p>Plan: <span class="badge badge-primary">{{ user.plan|title }}</span></p>
+      {% if not user.email_verified %}
+        <div class="alert alert-warning mt-2">Please verify your email to use LinkGnome.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card bg-base-100 shadow-sm">
+    <div class="card-body">
+      <h2 class="card-title">Connected Accounts</h2>
+
+      <div class="flex items-center justify-between py-3 border-b">
+        <div>
+          <p class="font-medium">Mastodon</p>
+          {% if mastodon %}
+            <span class="text-sm text-base-content/60">{{ mastodon.instance_url }} ({{ mastodon.mastodon_username }})</span>
+          {% else %}
+            <span class="text-sm text-base-content/60">Not connected</span>
+          {% endif %}
+        </div>
+        <div>
+          {% if mastodon %}
+            <form method="post" action="{% url 'accounts:disconnect_mastodon' %}">
+              {% csrf_token %}
+              <button class="btn btn-outline btn-error btn-sm">Disconnect</button>
+            </form>
+          {% elif user.is_fully_activated %}
+            <a href="{% url 'accounts:connect_mastodon' %}" class="btn btn-primary btn-sm">Connect</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between py-3">
+        <div>
+          <p class="font-medium">Bluesky</p>
+          {% if bluesky %}
+            <span class="text-sm text-base-content/60">{{ bluesky.handle }}</span>
+          {% else %}
+            <span class="text-sm text-base-content/60">Not connected</span>
+          {% endif %}
+        </div>
+        <div>
+          {% if bluesky %}
+            <form method="post" action="{% url 'accounts:disconnect_bluesky' %}">
+              {% csrf_token %}
+              <button class="btn btn-outline btn-error btn-sm">Disconnect</button>
+            </form>
+          {% elif user.is_fully_activated %}
+            <a href="{% url 'accounts:connect_bluesky' %}" class="btn btn-primary btn-sm">Connect</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

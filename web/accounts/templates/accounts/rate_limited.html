@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Rate Limited — LinkGnome{% endblock %}
+{% block content %}
+<div class="flex items-center justify-center min-h-[60vh]">
+  <div class="card w-full max-w-md bg-base-100 shadow-xl">
+    <div class="card-body text-center">
+      <div class="text-6xl mb-4">🐌</div>
+      <h2 class="card-title text-2xl font-bold mb-4 justify-center">Too Many Attempts</h2>
+      <p>Please wait a while and try again.</p>
+      <a href="{% url 'accounts:login' %}" class="btn btn-primary mt-6">Back to Login</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

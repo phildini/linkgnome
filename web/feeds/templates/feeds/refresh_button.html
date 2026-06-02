@@ -1,0 +1,17 @@
+{% if can_refresh %}
+  <button class="btn btn-primary btn-sm"{% if swap_oob %} hx-swap-oob="true"{% endif %}
+          hx-post="{% url 'feeds:refresh_feeds' %}"
+          hx-target="#refresh-area"
+          hx-swap="outerHTML">
+    Refresh
+  </button>
+{% else %}
+  <button class="btn btn-outline btn-sm"{% if swap_oob %} hx-swap-oob="true"{% endif %}
+          hx-get="{% url 'feeds:refresh_button' %}"
+          hx-target="#refresh-area"
+          hx-swap="outerHTML"
+          hx-trigger="every 5s"
+          disabled>
+    Refresh ({{ cooldown_remaining }}s)
+  </button>
+{% endif %}

@@ -37,26 +37,22 @@ async def fetch_all_titles(
                 }
                 async with httpx.AsyncClient(
                     timeout=timeout,
-                    follow_redirects=False,
+                    follow_redirects=True,
+                    max_redirects=5,
                 ) as client:
                     response = await client.get(url, headers=headers)
+                    final_url = str(response.url)
 
-                    fetch_url = url
-                    if response.status_code in (301, 302, 303, 307, 308):
-                        new_url = response.headers.get("location")
-                        if new_url:
-                            fetch_url = new_url
-                    else:
-                        content_type = response.headers.get("content-type", "")
-                        if "text/html" not in content_type:
-                            db.save_url_metadata(url, url, response.status_code)
-                            return (fetch_url, url)
+                    content_type = response.headers.get("content-type", "")
+                    if "text/html" not in content_type:
+                        db.save_url_metadata(url, url, response.status_code, final_url=final_url)
+                        return (final_url, url)
 
-                        html = response.text
-                        title = _extract_title(html)
-                        result = title or url
-                        db.save_url_metadata(url, result, response.status_code)
-                        return (fetch_url, result)
+                    html_content = response.text
+                    title = _extract_title(html_content)
+                    result = title or url
+                    db.save_url_metadata(url, result, response.status_code, final_url=final_url)
+                    return (final_url, result)
 
             except Exception:
                 db.save_url_metadata(url, None, 0)

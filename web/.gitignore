@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+static/css/output.css
+staticfiles/
+data/linkgnome.db
+*.egg-info/
+node_modules/

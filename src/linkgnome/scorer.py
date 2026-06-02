@@ -3,12 +3,49 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from urllib.parse import parse_qs, urljoin, urlparse, urlunparse
+from urllib.parse import parse_qs, urlparse, urlunparse
 
 from linkgnome.fetchers.base import Post, ScoredLink
 from linkgnome.db import LinkgnomeDB
 from linkgnome.link_meta import fetch_all_titles
 
+
+
+def _platform_normalize_scores(scored_links: list[ScoredLink]) -> list[ScoredLink]:
+    """Normalize scores across platforms so no single platform dominates.
+
+    Computes the median score for each platform, then lifts lower-median
+    platforms so all platforms share the same median score.
+    """
+    platform_scores: dict[Platform, list[float]] = {}
+    for link in scored_links:
+        for p in link.source_platforms or []:
+            platform_scores.setdefault(p, []).append(link.score)
+
+    if len(platform_scores) < 2:
+        return scored_links
+
+    medians: dict[Platform, float] = {}
+    for p, scores in platform_scores.items():
+        sorted_scores = sorted(scores)
+        mid = len(sorted_scores) // 2
+        if len(sorted_scores) % 2 == 0:
+            medians[p] = (sorted_scores[mid - 1] + sorted_scores[mid]) / 2
+        else:
+            medians[p] = sorted_scores[mid]
+
+    max_median = max(medians.values())
+    lift_factors: dict[Platform, float] = {}
+    for p, median in medians.items():
+        lift_factors[p] = max_median / median if median > 0 else 1.0
+
+    for link in scored_links:
+        if link.source_platforms:
+            factors = [lift_factors.get(p, 1.0) for p in link.source_platforms]
+            link.score = round(link.score * sum(factors) / len(factors), 2)
+
+    scored_links.sort(key=lambda x: x.score, reverse=True)
+    return scored_links
 
 
 def _is_noise_url(url: str) -> bool:
@@ -63,23 +100,13 @@ async def score_links(
 
     filtered_posts = [post for post in posts if post.created_at >= cutoff]
 
-    # Resolve all URLs through redirects once, for dedup
-    all_raw_urls = list(set(
-        url for post in filtered_posts for url in post.urls if not _is_noise_url(url)
-    ))
-    resolved_urls: dict[str, str] = {}
-    for url in all_raw_urls:
-        resolved = await follow_redirects(url, db)
-        resolved_urls[url] = resolved
-
     link_groups: dict[str, list[Post]] = {}
 
     for post in filtered_posts:
         for url in post.urls:
             if _is_noise_url(url):
                 continue
-            final_url = resolved_urls.get(url, url)
-            canonical = normalize_url(final_url)
+            canonical = normalize_url(url)
             if canonical is None:
                 continue
             if canonical not in link_groups:
@@ -132,6 +159,11 @@ async def score_links(
             scored_links.append(scored_link)
 
     scored_links.sort(key=lambda x: x.score, reverse=True)
+    scored_links = _platform_normalize_scores(scored_links)
+
+    if db:
+        scored_links = _merge_redirect_duplicates(scored_links, db)
+
     return scored_links
 
 
@@ -224,36 +256,51 @@ def normalize_url(url: str) -> str | None:
         return None
 
 
-async def follow_redirects(url: str, db: LinkgnomeDB | None = None, max_redirects: int = 4) -> str:
-    """Follow HTTP redirects to get the canonical URL, using DB cache."""
-    if db is not None:
-        cached = db.get_url_metadata(url)
-        if cached and cached.get("final_url"):
-            return cached["final_url"]
+def _merge_redirect_duplicates(
+    scored_links: list[ScoredLink], db: LinkgnomeDB
+) -> list[ScoredLink]:
+    """Merge scored links that redirect to the same final URL.
 
-    import httpx
+    After title fetching, check each link's final_url from the DB cache.
+    If two links resolve to the same canoncial URL, merge their engagement.
+    """
+    redirect_map: dict[str, str] = {}
+    for link in scored_links:
+        meta = db.get_url_metadata(link.url)
+        if meta and meta.get("final_url"):
+            final_canonical = normalize_url(meta["final_url"])
+            if final_canonical and final_canonical != link.url:
+                redirect_map[link.url] = final_canonical
 
-    try:
-        async with httpx.AsyncClient(
-            timeout=10.0,
-            http2=True,
-        ) as client:
-            current_url = url
-            for _ in range(max_redirects):
-                response = await client.head(
-                    current_url,
-                    follow_redirects=False,
+    if not redirect_map:
+        return scored_links
+
+    merged: dict[str, ScoredLink] = {}
+    for link in scored_links:
+        target = redirect_map.get(link.url, link.url)
+        existing = merged.get(target)
+        if existing:
+            existing.score = round(existing.score + link.score, 2)
+            existing.post_count += link.post_count
+            existing.boost_count += link.boost_count
+            existing.like_count += link.like_count
+        else:
+            if target != link.url:
+                existing = ScoredLink(
+                    url=target,
+                    canonical_url=target,
+                    score=link.score,
+                    post_count=link.post_count,
+                    boost_count=link.boost_count,
+                    like_count=link.like_count,
+                    posts=link.posts,
+                    source_platforms=link.source_platforms,
+                    title=link.title,
                 )
-                if response.status_code in (301, 302, 303, 307, 308):
-                    location = response.headers.get("location")
-                    if location:
-                        current_url = urljoin(current_url, location)
-                    else:
-                        break
-                else:
-                    break
-            if current_url != url and db is not None:
-                db.save_url_metadata(url, None, 0, final_url=current_url)
-            return current_url
-    except Exception:
-        return url
+                merged[target] = existing
+            else:
+                merged[target] = link
+
+    result = list(merged.values())
+    result.sort(key=lambda x: x.score, reverse=True)
+    return result

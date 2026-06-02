@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}LinkGnome{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-4">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold">Your Links</h1>
+    <div id="refresh-area">
+      {% include "feeds/refresh_button.html" %}
+    </div>
+  </div>
+
+  {% if not is_activated %}
+    <div class="alert alert-warning">
+      Verify your email to connect social accounts and fetch links.
+      <a href="{% url 'accounts:settings' %}" class="link link-primary ml-2">Settings</a>
+    </div>
+  {% elif not has_mastodon and not has_bluesky %}
+    <div class="alert alert-info">
+      Connect a Mastodon or Bluesky account to get started.
+      <a href="{% url 'accounts:settings' %}" class="link link-primary ml-2">Settings</a>
+    </div>
+  {% endif %}
+
+  <div id="feed-table">
+    {% include "feeds/feed_table.html" %}
+  </div>
+
+  <div id="feed-poll"
+       hx-get="{% url 'feeds:feed_status' %}"
+       hx-trigger="startPolling from:body, every 2s"
+       hx-target="#feed-table"
+       hx-swap="outerHTML">
+  </div>
+</div>
+{% endblock %}

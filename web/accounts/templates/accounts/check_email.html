@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Check Your Email — LinkGnome{% endblock %}
+{% block content %}
+<div class="flex items-center justify-center min-h-[60vh]">
+  <div class="card w-full max-w-md bg-base-100 shadow-xl">
+    <div class="card-body text-center">
+      <h2 class="card-title text-2xl font-bold mb-4 justify-center">Check Your Email</h2>
+      <p>We sent a verification link to <strong>{{ email }}</strong>.</p>
+      <p class="text-sm text-base-content/60 mt-2">Click the link to activate your account. The link expires in 24 hours.</p>
+      <a href="{% url 'accounts:login' %}" class="btn btn-primary mt-6">Back to Login</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

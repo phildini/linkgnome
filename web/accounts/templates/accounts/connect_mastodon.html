@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Connect Mastodon — LinkGnome{% endblock %}
+{% block content %}
+<div class="flex items-center justify-center min-h-[60vh]">
+  <div class="card w-full max-w-md bg-base-100 shadow-xl">
+    <div class="card-body">
+      <h2 class="card-title text-2xl font-bold mb-4">Connect Mastodon</h2>
+      <p class="text-sm text-base-content/60 mb-4">Enter your Mastodon instance URL. You'll be redirected to authorize LinkGnome to read your home timeline.</p>
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-error">{{ form.non_field_errors }}</div>
+        {% endif %}
+        {% for field in form %}
+          <div>
+            <label class="label" for="{{ field.id_for_label }}">
+              <span class="label-text">{{ field.label }}</span>
+            </label>
+            {{ field }}
+            {% if field.errors %}
+              <span class="text-error text-sm">{{ field.errors|striptags }}</span>
+            {% endif %}
+          </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary w-full">Connect Mastodon</button>
+      </form>
+      <a href="{% url 'accounts:settings' %}" class="btn btn-ghost btn-sm mt-2">Cancel</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
