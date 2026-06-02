@@ -6,17 +6,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 COPY --from=flyio/litefs:0.5 /usr/local/bin/litefs /usr/local/bin/litefs
 
-COPY litefs.yml /etc/litefs.yml
+COPY web/litefs.yml /etc/litefs.yml
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY web/requirements.txt .
 RUN uv pip install --system --no-cache -r requirements.txt linkgnome
 
-COPY package.json package-lock.json* ./
+COPY web/package.json web/package-lock.json* ./
 RUN npm install
 
-COPY . .
+COPY web/ .
 
 RUN npx tailwindcss -i static/src/input.css -o static/css/output.css --minify
 
