@@ -2,8 +2,30 @@
 {% block title %}LinkGnome{% endblock %}
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-4">
-  <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold">Your Links</h1>
+  <div class="flex items-center justify-between gap-4">
+    <div class="flex items-center gap-2">
+      <h1 class="text-2xl font-bold">Your Links</h1>
+      <div class="join">
+        <a href="{% url 'feeds:dashboard' %}?platform=all"
+           class="btn btn-xs join-item {% if current_platform == 'all' %}btn-active{% endif %}"
+           hx-get="{% url 'feeds:feed_table' %}?platform=all"
+           hx-target="#feed-table"
+           hx-swap="outerHTML"
+           hx-push-url="{% url 'feeds:dashboard' %}?platform=all">All</a>
+        <a href="{% url 'feeds:dashboard' %}?platform=mastodon"
+           class="btn btn-xs join-item {% if current_platform == 'mastodon' %}btn-active{% endif %}"
+           hx-get="{% url 'feeds:feed_table' %}?platform=mastodon"
+           hx-target="#feed-table"
+           hx-swap="outerHTML"
+           hx-push-url="{% url 'feeds:dashboard' %}?platform=mastodon">M</a>
+        <a href="{% url 'feeds:dashboard' %}?platform=bluesky"
+           class="btn btn-xs join-item {% if current_platform == 'bluesky' %}btn-active{% endif %}"
+           hx-get="{% url 'feeds:feed_table' %}?platform=bluesky"
+           hx-target="#feed-table"
+           hx-swap="outerHTML"
+           hx-push-url="{% url 'feeds:dashboard' %}?platform=bluesky">B</a>
+      </div>
+    </div>
     <div id="refresh-area">
       {% include "feeds/refresh_button.html" %}
     </div>
@@ -20,27 +42,6 @@
       <a href="{% url 'accounts:settings' %}" class="link link-primary ml-2">Settings</a>
     </div>
   {% endif %}
-
-  <div class="join">
-    <a href="{% url 'feeds:dashboard' %}?platform=all"
-       class="btn btn-sm join-item {% if current_platform == 'all' %}btn-active{% endif %}"
-       hx-get="{% url 'feeds:feed_table' %}?platform=all"
-       hx-target="#feed-table"
-       hx-swap="outerHTML"
-       hx-push-url="{% url 'feeds:dashboard' %}?platform=all">All</a>
-    <a href="{% url 'feeds:dashboard' %}?platform=mastodon"
-       class="btn btn-sm join-item {% if current_platform == 'mastodon' %}btn-active{% endif %}"
-       hx-get="{% url 'feeds:feed_table' %}?platform=mastodon"
-       hx-target="#feed-table"
-       hx-swap="outerHTML"
-       hx-push-url="{% url 'feeds:dashboard' %}?platform=mastodon">Mastodon</a>
-    <a href="{% url 'feeds:dashboard' %}?platform=bluesky"
-       class="btn btn-sm join-item {% if current_platform == 'bluesky' %}btn-active{% endif %}"
-       hx-get="{% url 'feeds:feed_table' %}?platform=bluesky"
-       hx-target="#feed-table"
-       hx-swap="outerHTML"
-       hx-push-url="{% url 'feeds:dashboard' %}?platform=bluesky">Bluesky</a>
-  </div>
 
   {% include "feeds/feed_table.html" %}
 </div>
