@@ -18,6 +18,13 @@ jobs:
         run: |
           echo "app=linkgnome-pr-${{ github.event.number }}" >> $GITHUB_OUTPUT
           echo "url=https://linkgnome-pr-${{ github.event.number }}.fly.dev" >> $GITHUB_OUTPUT
+          echo "volume=litefs_data_pr_${{ github.event.number }}" >> $GITHUB_OUTPUT
+
+      - name: Patch fly.toml for PR preview
+        if: github.event.action != 'closed'
+        run: |
+          sed -i "s/source = 'litefs_data'/source = '${{ steps.names.outputs.volume }}'/" web/fly.toml
+          echo "Patched fly.toml mount source to ${{ steps.names.outputs.volume }}"
 
       - name: Destroy preview (PR closed)
         if: github.event.action == 'closed'
@@ -38,7 +45,7 @@ jobs:
         run: |
           EXISTING=$(fly volumes list --app "${{ steps.names.outputs.app }}" --json 2>/dev/null | python3 -c "import sys,json; vols=json.load(sys.stdin); print('yes') if vols else print('no')" 2>/dev/null || echo "no")
           if [ "$EXISTING" = "no" ]; then
-            fly volumes create litefs_data \
+            fly volumes create "${{ steps.names.outputs.volume }}" \
               --app "${{ steps.names.outputs.app }}" \
               --size 1 \
               --region iad
