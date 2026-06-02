@@ -1,13 +1,13 @@
 {% if links %}
-  <div class="space-y-1">
+  <div class="space-y-2">
     {% for link in links %}
-      <div class="card card-compact bg-base-100 border-b border-base-200 rounded-none">
-        <div class="card-body px-2 py-2">
+      <div class="card card-compact bg-base-100 shadow-sm border border-base-200">
+        <div class="card-body px-3 py-2.5">
           <div class="flex items-start gap-2">
-            <div class="badge badge-accent badge-xs font-mono shrink-0 mt-0.5">{{ link.score|floatformat:0 }}</div>
+            <div class="badge badge-accent badge-sm font-mono shrink-0 mt-0.5">{{ link.score|floatformat:0 }}</div>
             <div class="min-w-0 flex-1">
               {% if link.title and link.title != link.url %}
-                <p class="font-medium text-sm leading-tight truncate">{{ link.title }}</p>
+                <p class="font-medium text-sm leading-snug">{{ link.title }}</p>
               {% endif %}
               <a href="{{ link.url }}"
                  class="text-xs link link-primary truncate block"
@@ -15,17 +15,18 @@
                  rel="noopener">
                 {{ link.url }}
               </a>
-              <div class="flex items-center gap-2 text-xs text-base-content/50 mt-0.5">
+              <div class="flex items-center gap-1.5 text-xs text-base-content/50 mt-0.5 flex-wrap">
                 <span>{{ link.author_names }}</span>
                 {% if link.author_post_urls %}
-                  <span>·</span>
-                  <a href="{{ link.author_post_urls.0 }}" target="_blank" rel="noopener" class="link link-secondary">post</a>
+                  <a href="{{ link.author_post_urls.0 }}" target="_blank" rel="noopener" class="link link-secondary whitespace-nowrap">
+                    {{ link.last_seen_at|timesince }} ago
+                  </a>
                   {% if link.author_post_urls|length > 1 %}
                     <span class="text-base-content/30">+{{ link.author_post_urls|length|add:"-1" }}</span>
                   {% endif %}
                 {% endif %}
-                <span class="ml-auto">
-                  {{ link.post_count }}p {{ link.boost_count }}b {{ link.like_count }}l
+                <span class="ml-auto whitespace-nowrap" title="Posts · Boosts · Likes">
+                  📝{{ link.post_count }} · 🔄{{ link.boost_count }} · ❤️{{ link.like_count }}
                 </span>
               </div>
             </div>
