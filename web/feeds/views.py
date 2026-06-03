@@ -42,10 +42,14 @@ def feed_table(request):
     links = _filter_links(user, platform)
     paginator = Paginator(links, PAGE_SIZE)
     page = paginator.get_page(request.GET.get("page", 1))
-    return render(request, "feeds/feed_content.html", {
-        "links": page,
-        "current_platform": platform,
-    })
+    ctx = {"links": page, "current_platform": platform}
+
+    if request.headers.get("HX-Request"):
+        content = render(request, "feeds/feed_content.html", ctx)
+        oob = render(request, "feeds/filter_oob.html", ctx)
+        return HttpResponse(content.content + oob.content)
+
+    return render(request, "feeds/feed_content.html", ctx)
 
 
 def _filter_links(user, platform: str):
@@ -96,10 +100,10 @@ def feed_status(request):
         links = _filter_links(user, platform)
         paginator = Paginator(links, PAGE_SIZE)
         page = paginator.get_page(1)
-        return render(request, "feeds/feed_content.html", {
-            "links": page,
-            "current_platform": platform,
-        })
+        ctx = {"links": page, "current_platform": platform}
+        content = render(request, "feeds/feed_content.html", ctx)
+        oob = render(request, "feeds/filter_oob.html", ctx)
+        return HttpResponse(content.content + oob.content)
 
     return HttpResponse(status=204)
 
