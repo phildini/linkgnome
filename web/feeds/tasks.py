@@ -1,9 +1,12 @@
 """Background task for fetching and scoring feeds."""
 import asyncio
+import html as html_mod
 import logging
+import re
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
+import httpx
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -67,6 +70,9 @@ async def _fetch_user_feeds_async(user_id: int) -> None:
 
         scored = await score_links(posts, db=cache_db)
         logger.info("Scored %d links", len(scored))
+
+        await _fill_missing_titles(scored, cache_db)
+        logger.info("Filled missing titles")
 
         await _store_scored_links(user, scored)
 
