@@ -74,12 +74,31 @@ async def fetch_all_titles(
 
 
 def _extract_title(html_content: str) -> str | None:
-    """Extract <title> from HTML, stripping tags and whitespace."""
-    match = re.search(
+    """Extract page title from HTML, trying og:title, twitter:title, then <title>."""
+    # og:title
+    m = re.search(
+        r'<meta\s+property=[\'"]og:title[\'"]\s+content=[\'"](.*?)[\'"]\s*/?>',
+        html_content, re.IGNORECASE,
+    )
+    if m:
+        title = m.group(1).strip()
+        return html.unescape(title) if title else None
+
+    # twitter:title
+    m = re.search(
+        r'<meta\s+name=[\'"]twitter:title[\'"]\s+content=[\'"](.*?)[\'"]\s*/?>',
+        html_content, re.IGNORECASE,
+    )
+    if m:
+        title = m.group(1).strip()
+        return html.unescape(title) if title else None
+
+    # <title>
+    m = re.search(
         r"<title[^>]*>(.*?)</title>", html_content, re.IGNORECASE | re.DOTALL
     )
-    if match:
-        title = match.group(1).strip()
-        title = html.unescape(title)
-        return title if title else None
+    if m:
+        title = m.group(1).strip()
+        return html.unescape(title) if title else None
+
     return None

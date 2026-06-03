@@ -1,12 +1,9 @@
 """Background task for fetching and scoring feeds."""
 import asyncio
-import html as html_mod
 import logging
-import re
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-import httpx
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -70,9 +67,6 @@ async def _fetch_user_feeds_async(user_id: int) -> None:
 
         scored = await score_links(posts, db=cache_db)
         logger.info("Scored %d links", len(scored))
-
-        await _fill_missing_titles(scored, cache_db)
-        logger.info("Filled missing titles")
 
         await _store_scored_links(user, scored)
 
@@ -141,51 +135,3 @@ def _store_scored_links_sync(user, scored_links) -> None:
             for link in scored_links
         ])
     logger.info("Stored %d scored links for %s", len(scored_links), user.username)
-
-
-async def _fetch_title_robust(url: str) -> str | None:
-    """Fetch a page title with og:title/twitter:title fallback."""
-    headers = {"User-Agent": "Mozilla/5.0 (compatible; LinkGnome/1.0)"}
-    try:
-        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True, max_redirects=5) as client:
-            response = await client.get(url, headers=headers)
-            if "text/html" not in response.headers.get("content-type", ""):
-                return None
-
-            html = response.text
-
-            m = re.search(r'<meta\s+property=[\'"]og:title[\'"]\s+content=[\'"](.*?)[\'"]\s*/?>', html, re.IGNORECASE)
-            if m:
-                return html_mod.unescape(m.group(1).strip())
-
-            m = re.search(r'<meta\s+name=[\'"]twitter:title[\'"]\s+content=[\'"](.*?)[\'"]\s*/?>', html, re.IGNORECASE)
-            if m:
-                return html_mod.unescape(m.group(1).strip())
-
-            m = re.search(r'<title[^>]*>(.*?)</title>', html, re.IGNORECASE | re.DOTALL)
-            if m:
-                title = m.group(1).strip()
-                return html_mod.unescape(title) if title else None
-
-            return None
-    except Exception:
-        return None
-
-
-async def _fill_missing_titles(scored_links: list, cache_db) -> None:
-    """Re-fetch titles for links that got URL as title (no real title found)."""
-    missing = [link for link in scored_links if link.title == link.url]
-    if not missing:
-        logger.info("All %d links have real titles", len(scored_links))
-        return
-
-    logger.info("Fetching missing titles for %d/%d links", len(missing), len(scored_links))
-
-    for link in missing:
-        title = await _fetch_title_robust(link.url)
-        if title:
-            link.title = title
-            cache_db.save_url_metadata(link.url, title, 200)
-
-    filled = sum(1 for link in missing if link.title != link.url)
-    logger.info("Filled %d/%d missing titles", filled, len(missing))
