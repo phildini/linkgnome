@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}LinkGnome{% endblock %}</title>
   <link href="{% static 'css/output.css' %}" rel="stylesheet" />
+  <link rel="icon" type="image/png" href="{% static 'img/linkgnome.png' %}" />
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
   <script>
     document.addEventListener('htmx:configRequest', (e) => {
@@ -25,9 +26,9 @@
   <nav class="gnome-nav" aria-label="Main navigation">
     <div class="container mx-auto px-4">
       <div class="flex items-center justify-between h-14">
-        <a href="{% url 'feeds:dashboard' %}" class="flex items-center gap-2 text-lg font-bold text-base-content no-underline hover:opacity-80 transition-opacity">
-          <span aria-hidden="true" class="text-xl">🌿</span>
-          LinkGnome
+        <a href="{% url 'feeds:dashboard' %}" class="flex items-center gap-2 no-underline hover:opacity-80 transition-opacity">
+          <img src="{% static 'img/linkgnome.png' %}" alt="LinkGnome" class="h-8 w-auto" />
+          <span class="text-lg font-bold text-base-content">LinkGnome</span>
         </a>
         <div class="flex items-center gap-1">
           {% if user.is_authenticated %}
