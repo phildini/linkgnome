@@ -41,7 +41,9 @@
                     <span class="text-base-content/30" aria-label="{{ link.author_post_urls|length }} posts shared this link">+{{ link.author_post_urls|length|add:"-1" }}</span>
                   {% endif %}
                 {% endif %}
-                <span class="ml-auto whitespace-nowrap" role="list" aria-label="Engagement: {{ link.post_count }} posts, {{ link.boost_count }} boosts, {{ link.like_count }} likes">
+                <span class="ml-auto whitespace-nowrap" role="list"
+      title="{{ link.post_count }}×1.0 + {{ link.boost_count }}×0.5 + {{ link.like_count }}×0.25 = {{ link.score|floatformat:1 }}"
+      aria-label="Engagement score: {{ link.post_count }} posts, {{ link.boost_count }} boosts, {{ link.like_count }} likes">
                   <span role="listitem" aria-label="{{ link.post_count }} posts">📝{{ link.post_count }}</span>
                   <span aria-hidden="true"> · </span>
                   <span role="listitem" aria-label="{{ link.boost_count }} boosts">🔄{{ link.boost_count }}</span>
