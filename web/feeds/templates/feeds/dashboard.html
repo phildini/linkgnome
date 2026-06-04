@@ -5,29 +5,8 @@
   <div class="flex items-center justify-between gap-4">
     <div class="flex items-center gap-2">
       <h1 class="text-2xl font-bold">Your Links</h1>
-      <div id="filter-bar" class="join" role="group" aria-label="Filter by platform">
-        <a href="{% url 'feeds:dashboard' %}?platform=all"
-           class="btn btn-xs join-item gnome-btn-filter {% if current_platform == 'all' %}btn-active{% endif %}"
-           hx-get="{% url 'feeds:feed_table' %}?platform=all&range={{ current_range }}"
-           hx-target="#feed-content"
-           hx-swap="outerHTML"
-           hx-push-url="{% url 'feeds:dashboard' %}?platform=all&range={{ current_range }}"
-           aria-label="Show all links">All</a>
-        <a href="{% url 'feeds:dashboard' %}?platform=mastodon"
-           class="btn btn-xs join-item gnome-btn-filter {% if current_platform == 'mastodon' %}btn-active{% endif %}"
-           hx-get="{% url 'feeds:feed_table' %}?platform=mastodon&range={{ current_range }}"
-           hx-target="#feed-content"
-           hx-swap="outerHTML"
-           hx-push-url="{% url 'feeds:dashboard' %}?platform=mastodon&range={{ current_range }}"
-           aria-label="Show only Mastodon links">M</a>
-        <a href="{% url 'feeds:dashboard' %}?platform=bluesky"
-           class="btn btn-xs join-item gnome-btn-filter {% if current_platform == 'bluesky' %}btn-active{% endif %}"
-           hx-get="{% url 'feeds:feed_table' %}?platform=bluesky&range={{ current_range }}"
-           hx-target="#feed-content"
-           hx-swap="outerHTML"
-           hx-push-url="{% url 'feeds:dashboard' %}?platform=bluesky&range={{ current_range }}"
-           aria-label="Show only Bluesky links">B</a>
-      </div>
+      {% include "feeds/_filter_bar.html" %}
+    </div>
       <div id="time-bar" class="join" role="group" aria-label="Time range">
         <a href="{% url 'feeds:dashboard' %}?range=24h&platform={{ current_platform }}"
            class="btn btn-xs join-item gnome-btn-filter {% if current_range == '24h' %}btn-active{% endif %}"
