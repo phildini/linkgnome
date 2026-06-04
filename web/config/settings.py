@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "accounts",
     "feeds",
     "billing",
+    "links",
 ]
 
 MIDDLEWARE = [
