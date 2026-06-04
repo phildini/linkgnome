@@ -66,6 +66,7 @@ class Link(models.Model):
     last_seen_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        ordering = ["-score"]
         unique_together = [("canonical_url", "platform_post_id")]
         indexes = [
             models.Index(fields=["-posted_at"]),

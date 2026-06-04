@@ -1,11 +1,11 @@
 """Feed views — dashboard, HTMX endpoints."""
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone as dt_tz
 
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import render
-from django.utils import timezone
+from django.utils import timezone as django_tz
 from django.views.decorators.http import require_POST
 from django_q.tasks import async_task
 
@@ -84,10 +84,10 @@ def _filter_links(user, platform: str, time_range: str = "24h"):
             qs = qs.filter(platform__icontains="bluesky")
         return qs
 
-    qs = PersistentLink.objects.filter(posted_by__followed_by=user)
+    qs = PersistentLink.objects.filter(posted_by__followed_by__user=user)
     cutoff = TIME_RANGES.get(time_range)
     if cutoff:
-        qs = qs.filter(posted_at__gte=datetime.now(timezone.utc) - cutoff)
+        qs = qs.filter(posted_at__gte=datetime.now(dt_tz.utc) - cutoff)
     if platform == "mastodon":
         qs = qs.filter(posted_by__platform="mastodon")
     elif platform == "bluesky":
@@ -107,7 +107,7 @@ def refresh_feeds(request):
             "cooldown_remaining": cooldown_remaining,
         })
 
-    user.last_refresh_at = timezone.now()
+    user.last_refresh_at = django_tz.now()
     user.save(update_fields=["last_refresh_at"])
 
     async_task("feeds.tasks.fetch_user_feeds", user.id)
@@ -156,7 +156,7 @@ def refresh_button(request):
 def _check_cooldown(user):
     if not user.last_refresh_at:
         return True, 0
-    elapsed = timezone.now() - user.last_refresh_at
+    elapsed = django_tz.now() - user.last_refresh_at
     cooldown = timedelta(seconds=user.refresh_cooldown_seconds)
     if elapsed >= cooldown:
         return True, 0
