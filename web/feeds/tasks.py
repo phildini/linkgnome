@@ -10,6 +10,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 
 from feeds.models import FeedFetchJob, ScoredLink
+from links.models import Follow, Identity, Link as PersistentLink
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,9 @@ async def _fetch_user_feeds_async(user_id: int) -> None:
             posts.extend(b_posts)
 
         from linkgnome.scorer import score_links
+
+        await _persist_identities_and_links(user, posts)
+        logger.info("Persisted identities and links")
 
         scored = await score_links(posts, db=cache_db)
         logger.info("Scored %d links", len(scored))
@@ -135,3 +139,48 @@ def _store_scored_links_sync(user, scored_links) -> None:
             for link in scored_links
         ])
     logger.info("Stored %d scored links for %s", len(scored_links), user.username)
+
+
+async def _persist_identities_and_links(user, posts: list) -> None:
+    """Create/update Identity, Follow, and Link records from fetched posts."""
+    from linkgnome.scorer import normalize_url
+
+    for post in posts:
+        identity, _ = await sync_to_async(Identity.objects.update_or_create)(
+            platform=post.platform.value,
+            platform_user_id=post.author,
+            defaults={
+                "username": post.author,
+                "display_name": post.author_display_name or post.author,
+            },
+        )
+        await sync_to_async(Follow.objects.get_or_create)(
+            user=user, identity=identity,
+        )
+
+        for url in post.urls:
+            canonical = normalize_url(url)
+            if not canonical:
+                continue
+            like_count = post.like_count
+            boost_count = post.boost_count
+            score = boost_count * 0.5 + like_count * 0.25 + 1.0
+
+            await sync_to_async(PersistentLink.objects.update_or_create)(
+                canonical_url=canonical,
+                platform_post_id=post.id,
+                defaults={
+                    "url": url,
+                    "posted_by": identity,
+                    "posted_at": post.created_at,
+                    "post_url": post.id,
+                    "post_text": post.content[:500] if post.content else "",
+                    "score": round(score, 2),
+                    "like_count": like_count,
+                    "boost_count": boost_count,
+                    "post_count": 1,
+                },
+            )
+
+    total = await sync_to_async(PersistentLink.objects.count)()
+    logger.info("Persisted %d posts → total %d persistent links", len(posts), total)

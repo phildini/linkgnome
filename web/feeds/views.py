@@ -1,24 +1,41 @@
 """Feed views — dashboard, HTMX endpoints."""
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as dt_tz
 
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import render
-from django.utils import timezone
+from django.utils import timezone as django_tz
 from django.views.decorators.http import require_POST
 from django_q.tasks import async_task
 
 from feeds.models import FeedFetchJob, ScoredLink
+from links.models import Link as PersistentLink
 
 PAGE_SIZE = 25
+
+TIME_RANGES = {
+    "24h": timedelta(hours=24),
+    "7d": timedelta(days=7),
+    "30d": timedelta(days=30),
+    "all": None,
+}
+
+
+def _effective_time_range(user, requested: str) -> str:
+    """Return the actual time range a user can access based on their plan."""
+    allowed = {"free": ["24h"], "gnome": ["24h", "7d"], "wizard": list(TIME_RANGES)}
+    if requested not in allowed.get(user.plan, ["24h"]):
+        return "24h"
+    return requested
 
 
 @login_required
 def dashboard(request):
     user = request.user
     platform = request.GET.get("platform", "all")
-    links = _filter_links(user, platform)
+    time_range = _effective_time_range(user, request.GET.get("range", "24h"))
+    links = _filter_links(user, platform, time_range)
     paginator = Paginator(links, PAGE_SIZE)
     page = paginator.get_page(request.GET.get("page", 1))
 
@@ -32,6 +49,7 @@ def dashboard(request):
         "has_bluesky": user.bluesky_accounts.filter(is_active=True).exists(),
         "is_activated": user.is_fully_activated,
         "current_platform": platform,
+        "current_range": time_range,
     })
 
 
@@ -39,10 +57,15 @@ def dashboard(request):
 def feed_table(request):
     user = request.user
     platform = request.GET.get("platform", "all")
-    links = _filter_links(user, platform)
+    time_range = _effective_time_range(user, request.GET.get("range", "24h"))
+    links = _filter_links(user, platform, time_range)
     paginator = Paginator(links, PAGE_SIZE)
     page = paginator.get_page(request.GET.get("page", 1))
-    ctx = {"links": page, "current_platform": platform}
+    ctx = {
+        "links": page,
+        "current_platform": platform,
+        "current_range": time_range,
+    }
 
     if request.headers.get("HX-Request"):
         content = render(request, "feeds/feed_content.html", ctx)
@@ -52,13 +75,24 @@ def feed_table(request):
     return render(request, "feeds/feed_content.html", ctx)
 
 
-def _filter_links(user, platform: str):
-    qs = ScoredLink.objects.filter(user=user)
+def _filter_links(user, platform: str, time_range: str = "24h"):
+    if time_range == "24h":
+        qs = ScoredLink.objects.filter(user=user)
+        if platform == "mastodon":
+            qs = qs.filter(platform__icontains="mastodon")
+        elif platform == "bluesky":
+            qs = qs.filter(platform__icontains="bluesky")
+        return qs
+
+    qs = PersistentLink.objects.filter(posted_by__followed_by__user=user)
+    cutoff = TIME_RANGES.get(time_range)
+    if cutoff:
+        qs = qs.filter(posted_at__gte=datetime.now(dt_tz.utc) - cutoff)
     if platform == "mastodon":
-        qs = qs.filter(platform__icontains="mastodon")
+        qs = qs.filter(posted_by__platform="mastodon")
     elif platform == "bluesky":
-        qs = qs.filter(platform__icontains="bluesky")
-    return qs
+        qs = qs.filter(posted_by__platform="bluesky")
+    return qs.order_by("-score")
 
 
 @login_required
@@ -73,7 +107,7 @@ def refresh_feeds(request):
             "cooldown_remaining": cooldown_remaining,
         })
 
-    user.last_refresh_at = timezone.now()
+    user.last_refresh_at = django_tz.now()
     user.save(update_fields=["last_refresh_at"])
 
     async_task("feeds.tasks.fetch_user_feeds", user.id)
@@ -90,6 +124,7 @@ def refresh_feeds(request):
 def feed_status(request):
     user = request.user
     platform = request.GET.get("platform", "all")
+    time_range = _effective_time_range(user, request.GET.get("range", "24h"))
     latest_job = (
         FeedFetchJob.objects.filter(user=user)
         .order_by("-requested_at")
@@ -97,10 +132,10 @@ def feed_status(request):
     )
 
     if latest_job and latest_job.status == "completed":
-        links = _filter_links(user, platform)
+        links = _filter_links(user, platform, time_range)
         paginator = Paginator(links, PAGE_SIZE)
         page = paginator.get_page(1)
-        ctx = {"links": page, "current_platform": platform}
+        ctx = {"links": page, "current_platform": platform, "current_range": time_range}
         content = render(request, "feeds/feed_content.html", ctx)
         oob = render(request, "feeds/filter_oob.html", ctx)
         return HttpResponse(content.content + oob.content)
@@ -121,7 +156,7 @@ def refresh_button(request):
 def _check_cooldown(user):
     if not user.last_refresh_at:
         return True, 0
-    elapsed = timezone.now() - user.last_refresh_at
+    elapsed = django_tz.now() - user.last_refresh_at
     cooldown = timedelta(seconds=user.refresh_cooldown_seconds)
     if elapsed >= cooldown:
         return True, 0
