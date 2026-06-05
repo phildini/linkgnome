@@ -1,6 +1,7 @@
 """Django settings for linkgnome-web."""
 
 from pathlib import Path
+import dj_database_url
 import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -72,12 +73,16 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATA_DIR = Path(os.environ.get("DATA_DIR", BASE_DIR / "data"))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": str(DATA_DIR / "linkgnome.db"),
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if DATABASE_URL:
+    DATABASES = {"default": dj_database_url.config(default=DATABASE_URL, conn_max_age=600)}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": str(DATA_DIR / "linkgnome.db"),
+        }
     }
-}
 
 CACHES = {
     "default": {
