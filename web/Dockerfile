@@ -1,28 +1,35 @@
 FROM python:3.12-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    nodejs npm sqlite3 ca-certificates fuse3 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists/*
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-COPY --from=flyio/litefs:0.5 /usr/local/bin/litefs /usr/local/bin/litefs
-
-COPY web/litefs.yml /etc/litefs.yml
 
 WORKDIR /app
 
-COPY web/requirements.txt .
-RUN uv pip install --system --no-cache -r requirements.txt linkgnome
+# Copy entire repo (context must be repo root)
+COPY pyproject.toml README.md LICENSE uv.lock* /app/
+COPY src/ /app/src/
+COPY web/ /app/web/
 
-COPY web/package.json web/package-lock.json* ./
-RUN npm install
+WORKDIR /app/web
 
-COPY web/ .
+# Remove host .venv so uv creates a fresh one
+RUN rm -rf .venv
 
-RUN npx tailwindcss -i static/src/input.css -o static/css/output.css --minify
+# Install deps
+RUN uv sync --no-dev
 
-RUN python manage.py collectstatic --noinput
+# Build Tailwind CSS
+RUN npm install && npm run build
 
-RUN chmod +x docker-entrypoint.sh
-ENTRYPOINT ["litefs", "mount", "-config", "/etc/litefs.yml"]
+# Collect static files
+RUN uv run python manage.py collectstatic --noinput
 
-EXPOSE 8080 8081
+# Ensure cache directory exists (for XDG_CACHE_HOME fallback)
+RUN mkdir -p /data/cache
+
+EXPOSE 8080
+
+COPY web/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+ENTRYPOINT ["/docker-entrypoint.sh"]

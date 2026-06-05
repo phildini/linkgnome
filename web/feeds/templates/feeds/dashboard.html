@@ -7,35 +7,6 @@
       <h1 class="text-2xl font-bold">Your Links</h1>
       {% include "feeds/_filter_bar.html" %}
     </div>
-      <div id="time-bar" class="join" role="group" aria-label="Time range">
-        <a href="{% url 'feeds:dashboard' %}?range=24h&platform={{ current_platform }}"
-           class="btn btn-xs join-item gnome-btn-filter {% if current_range == '24h' %}btn-active{% endif %}"
-           hx-get="{% url 'feeds:feed_table' %}?range=24h&platform={{ current_platform }}"
-           hx-target="#feed-content"
-           hx-swap="outerHTML"
-           hx-push-url="{% url 'feeds:dashboard' %}?range=24h&platform={{ current_platform }}">24h</a>
-        <a href="{% url 'feeds:dashboard' %}?range=7d&platform={{ current_platform }}"
-           class="btn btn-xs join-item gnome-btn-filter {% if current_range == '7d' %}btn-active{% endif %}"
-           hx-get="{% url 'feeds:feed_table' %}?range=7d&platform={{ current_platform }}"
-           hx-target="#feed-content"
-           hx-swap="outerHTML"
-           hx-push-url="{% url 'feeds:dashboard' %}?range=7d&platform={{ current_platform }}">7d</a>
-        {% if user.plan == 'wizard' %}
-          <a href="{% url 'feeds:dashboard' %}?range=30d&platform={{ current_platform }}"
-             class="btn btn-xs join-item gnome-btn-filter {% if current_range == '30d' %}btn-active{% endif %}"
-             hx-get="{% url 'feeds:feed_table' %}?range=30d&platform={{ current_platform }}"
-             hx-target="#feed-content"
-             hx-swap="outerHTML"
-             hx-push-url="{% url 'feeds:dashboard' %}?range=30d&platform={{ current_platform }}">30d</a>
-          <a href="{% url 'feeds:dashboard' %}?range=all&platform={{ current_platform }}"
-             class="btn btn-xs join-item gnome-btn-filter {% if current_range == 'all' %}btn-active{% endif %}"
-             hx-get="{% url 'feeds:feed_table' %}?range=all&platform={{ current_platform }}"
-             hx-target="#feed-content"
-             hx-swap="outerHTML"
-             hx-push-url="{% url 'feeds:dashboard' %}?range=all&platform={{ current_platform }}">All</a>
-        {% endif %}
-      </div>
-    </div>
     <div id="refresh-area" role="region" aria-label="Refresh controls">
       {% include "feeds/refresh_button.html" %}
     </div>

@@ -94,7 +94,10 @@ def _extract_post_url(post) -> str:
     """Extract the original post URL from a Post object."""
     if post.raw_data:
         if post.platform.value == "mastodon":
-            return post.raw_data.get("url") or post.raw_data.get("uri") or ""
+            url = post.raw_data.get("url") or post.raw_data.get("uri") or ""
+            if url.endswith("/activity"):
+                url = url.removesuffix("/activity")
+            return url
         if post.platform.value == "bluesky":
             post_data = post.raw_data.get("post", {})
             uri = post_data.get("uri", "")

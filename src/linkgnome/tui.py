@@ -251,7 +251,10 @@ def _get_post_url(scored_link: ScoredLink) -> str:
     if not first_post.raw_data:
         return _construct_post_url_fallback(first_post)
     if first_post.platform == Platform.MASTODON:
-        return first_post.raw_data.get("url") or first_post.raw_data.get("uri") or ""
+        url = first_post.raw_data.get("url") or first_post.raw_data.get("uri") or ""
+        if url.endswith("/activity"):
+            url = url.removesuffix("/activity")
+        return url
     if first_post.platform == Platform.BLUESKY:
         return _bluesky_post_to_url(first_post.raw_data)
     return ""
