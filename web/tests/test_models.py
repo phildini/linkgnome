@@ -14,13 +14,14 @@ class UserModelTest(TestCase):
         assert user.email == "test@example.com"
         assert user.plan == "free"
         assert user.email_verified is False
-        assert user.is_fully_activated is False
+        assert user.is_fully_activated is True
 
     def test_fully_activated(self):
         user = User.objects.create_user(username="test", email="a@b.com", password="x")
-        user.email_verified = True
-        user.save()
         assert user.is_fully_activated is True
+        user.is_active = False
+        user.save()
+        assert user.is_fully_activated is False
 
     def test_refresh_cooldown(self):
         user = User.objects.create_user(username="test", email="a@b.com", password="x")

@@ -11,6 +11,7 @@ def health_check(request):
 urlpatterns = [
     path("health/", health_check),
     path("admin/", admin.site.urls),
+    path("auth/", include("stagedoor.urls", namespace="stagedoor")),
     path("accounts/", include("accounts.urls")),
     path("", include("feeds.urls")),
 ]

@@ -1,7 +1,7 @@
 """Tests for time range and plan gating in feeds views."""
 from datetime import datetime, timedelta, timezone
 
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.urls import reverse
 
 from accounts.models import User
@@ -10,7 +10,6 @@ from feeds.views import _effective_time_range, _filter_links
 from links.models import Follow, Identity, Link as PersistentLink
 
 
-@override_settings(RATELIMIT_ENABLE=False)
 class EffectiveTimeRangeTest(TestCase):
     def test_free_user_defaults_to_24h(self):
         user = User.objects.create_user(username="f", email="f@b.com", password="x")
@@ -49,7 +48,6 @@ class EffectiveTimeRangeTest(TestCase):
         assert _effective_time_range(user, "30d") == "30d"
 
 
-@override_settings(RATELIMIT_ENABLE=False)
 class FilterLinksPlanTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
@@ -122,7 +120,6 @@ class FilterLinksPlanTest(TestCase):
         assert len(results) == 2
 
 
-@override_settings(RATELIMIT_ENABLE=False)
 class PersistentLinkTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(

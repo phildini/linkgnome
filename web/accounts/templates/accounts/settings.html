@@ -10,9 +10,6 @@
       <p>Username: <strong>{{ user.username }}</strong></p>
       <p>Email: <strong>{{ user.email }}</strong></p>
       <p>Plan: <span class="badge badge-primary">{{ user.plan|title }}</span></p>
-      {% if not user.email_verified %}
-        <div class="alert alert-warning mt-2">Please verify your email to use LinkGnome.</div>
-      {% endif %}
     </div>
   </div>
 

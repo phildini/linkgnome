@@ -31,7 +31,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
-    "axes",
+    "django.contrib.sites",
+    "stagedoor",
     "django_q",
     "accounts",
     "feeds",
@@ -46,7 +47,6 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "axes.middleware.AxesMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -69,6 +69,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+
+SITE_ID = 1
 
 DATA_DIR = Path(os.environ.get("DATA_DIR", BASE_DIR / "data"))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -93,7 +95,7 @@ CACHES = {
 AUTH_USER_MODEL = "accounts.User"
 
 AUTHENTICATION_BACKENDS = [
-    "axes.backends.AxesStandaloneBackend",
+    "stagedoor.backends.EmailTokenBackend",
     "django.contrib.auth.backends.ModelBackend",
 ]
 
@@ -101,16 +103,9 @@ LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
 
-# Axes
-AXES_FAILURE_LIMIT = 5
-AXES_COOLOFF_TIME = 1
-AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
-AXES_RESET_ON_SUCCESS = True
-AXES_ENABLED = not DEBUG
-
-# django-ratelimit
-RATELIMIT_ENABLE = not DEBUG
-RATELIMIT_FAIL_OPEN = False
+# Stagedoor (passwordless email login)
+STAGEDOOR_SITE_NAME = "LinkGnome"
+STAGEDOOR_DISABLE_USER_CREATION = False
 
 # django-q2
 Q_CLUSTER = {
