@@ -21,9 +21,9 @@ class LoginTest(TestCase):
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
 )
 class StagedoorLoginTest(TestCase):
-    def test_login_post_sends_magic_link(self):
+    def test_wrapper_sends_magic_link(self):
         response = self.client.post(
-            reverse("stagedoor:login"),
+            reverse("accounts:send_link"),
             {"contact": "newuser@example.com"},
         )
         assert response.status_code == 302
@@ -31,12 +31,17 @@ class StagedoorLoginTest(TestCase):
         assert len(mail.outbox) == 1
         assert "login" in mail.outbox[0].subject.lower()
 
-    def test_login_post_invalid_email(self):
+    def test_wrapper_invalid_email(self):
         response = self.client.post(
-            reverse("stagedoor:login"),
+            reverse("accounts:send_link"),
             {"contact": "not-an-email"},
         )
         assert response.status_code == 302
+
+    def test_wrapper_get_returns_405(self):
+        response = self.client.get(reverse("accounts:send_link"))
+        assert response.status_code == 405
+
 
     def test_token_login_creates_user_and_logs_in(self):
         from stagedoor.models import Email, AuthToken

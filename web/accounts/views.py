@@ -1,10 +1,12 @@
 """Authentication and account management views."""
 import logging
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.views.decorators.http import require_http_methods
 
 from accounts.bluesky import verify_credentials
 from accounts.forms import (
@@ -27,6 +29,21 @@ def login_view(request):
         return redirect("/")
 
     return render(request, "accounts/login.html")
+
+
+@require_http_methods(["POST"])
+def login_send_link(request):
+    next_url = request.GET.get("next", "")
+    try:
+        from stagedoor.views import login_post
+        return login_post(request)
+    except Exception:
+        logger.exception("Failed to send login link")
+        messages.error(request, "Something went wrong sending the login link. Please try again.")
+        login_url = reverse("accounts:login")
+        if next_url:
+            login_url += f"?next={next_url}"
+        return redirect(login_url)
 
 
 @login_required

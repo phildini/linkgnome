@@ -10,7 +10,7 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "insecure-dev-key-change-in-pro
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,.fly.dev").split(",")
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,.fly.dev,linkgno.me").split(",")
 
 CSRF_TRUSTED_ORIGINS = os.environ.get(
     "CSRF_TRUSTED_ORIGINS", "http://localhost:8000,https://*.fly.dev"
@@ -119,13 +119,14 @@ Q_CLUSTER = {
 }
 
 # Email (Postmark via django-anymail)
-EMAIL_BACKEND = os.environ.get(
-    "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
-)
-ANYMAIL = {
-    "POSTMARK_SERVER_TOKEN": os.environ.get("POSTMARK_TOKEN", ""),
-}
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@linkgnome.app")
+_postmark_token = os.environ.get("POSTMARK_TOKEN", "")
+if _postmark_token:
+    EMAIL_BACKEND = "anymail.backends.postmark.EmailBackend"
+    ANYMAIL = {"POSTMARK_SERVER_TOKEN": _postmark_token}
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    ANYMAIL = {}
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@linkgno.me")
 
 # LinkGnome cache path
 LINKGNOME_CACHE_PATH = str(DATA_DIR / "linkgnome-cache.db")
@@ -136,3 +137,37 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Logging
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {name} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "stagedoor": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}

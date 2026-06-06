@@ -6,6 +6,7 @@ app_name = "accounts"
 
 urlpatterns = [
     path("login/", views.login_view, name="login"),
+    path("send-link/", views.login_send_link, name="send_link"),
     path("settings/", views.settings_view, name="settings"),
     path("mastodon/connect/", views.connect_mastodon, name="connect_mastodon"),
     path("mastodon/callback/", views.mastodon_callback, name="mastodon_callback"),

@@ -11,9 +11,6 @@ primary_region = 'ord'
   DJANGO_DEBUG = 'False'
   DJANGO_SECRET_KEY = 'change-me-in-production'
 
-[secrets]
-  DATABASE_URL = 'postgres://user:password@host:5432/dbname'
-
 [http_service]
   internal_port = 8080
   force_https = true

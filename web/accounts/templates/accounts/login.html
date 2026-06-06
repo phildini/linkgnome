@@ -5,7 +5,7 @@
   <div class="card w-full max-w-md bg-base-100 shadow-xl">
     <div class="card-body">
       <h2 class="card-title text-2xl font-bold mb-4">Log In</h2>
-      <form method="post" action="{% url 'stagedoor:login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}" class="space-y-4">
+      <form method="post" action="{% url 'accounts:send_link' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}" class="space-y-4">
         {% csrf_token %}
         {% if messages %}
           {% for message in messages %}
