@@ -1,23 +1,15 @@
 """Authentication and account management views."""
 import logging
 
-from django.conf import settings
-from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.core.mail import send_mail
-from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render
-from django.template.loader import render_to_string
 from django.urls import reverse
-from django_ratelimit.decorators import ratelimit
 
 from accounts.bluesky import verify_credentials
 from accounts.forms import (
     BlueskyConnectForm,
     InstanceUrlForm,
-    LoginForm,
-    SignupForm,
 )
 from accounts.mastodon import (
     build_authorize_url,
@@ -25,77 +17,16 @@ from accounts.mastodon import (
     exchange_code,
     register_instance_app,
 )
-from accounts.models import BlueskyAccount, MastodonAccount, User
+from accounts.models import BlueskyAccount, MastodonAccount
 
 logger = logging.getLogger(__name__)
-signer = TimestampSigner()
-
-
-def _rate_limited(request, exception=None):
-    return render(request, "accounts/rate_limited.html", status=429)
-
-
-@ratelimit(key="ip", rate="3/h", method="POST", block=True)
-def signup(request):
-    if request.user.is_authenticated:
-        return redirect("/")
-
-    if request.method == "POST":
-        form = SignupForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            token = signer.sign(str(user.id))
-            verify_url = request.build_absolute_uri(
-                reverse("accounts:verify_email", args=[token])
-            )
-            subject = "Verify your email for LinkGnome"
-            body = render_to_string("accounts/verify_email.txt", {
-                "user": user,
-                "verify_url": verify_url,
-            })
-            send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [user.email])
-            return render(request, "accounts/check_email.html", {"email": user.email})
-    else:
-        form = SignupForm()
-
-    return render(request, "accounts/signup.html", {"form": form})
-
-
-def verify_email(request, token):
-    try:
-        user_id = signer.unsign(token, max_age=86400)
-    except (SignatureExpired, BadSignature):
-        return render(request, "accounts/verify_failed.html", {"expired": True})
-
-    try:
-        user = User.objects.get(id=user_id, email_verified=False)
-    except User.DoesNotExist:
-        return render(request, "accounts/verify_failed.html", {"expired": False})
-
-    user.email_verified = True
-    user.save(update_fields=["email_verified"])
-    return render(request, "accounts/verify_success.html")
 
 
 def login_view(request):
     if request.user.is_authenticated:
         return redirect("/")
 
-    if request.method == "POST":
-        form = LoginForm(request, data=request.POST)
-        if form.is_valid():
-            login(request, form.get_user())
-            return redirect(request.GET.get("next", "/"))
-    else:
-        form = LoginForm()
-
-    return render(request, "accounts/login.html", {"form": form})
-
-
-def logout_view(request):
-    if request.method == "POST":
-        logout(request)
-    return redirect("/accounts/login/")
+    return render(request, "accounts/login.html")
 
 
 @login_required

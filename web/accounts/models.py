@@ -53,7 +53,7 @@ class User(AbstractUser):
 
     @property
     def is_fully_activated(self) -> bool:
-        return self.is_active and self.email_verified
+        return self.is_active
 
 
 class InstanceApp(models.Model):

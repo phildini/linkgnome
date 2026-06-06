@@ -33,13 +33,12 @@
         <div class="flex items-center gap-1">
           {% if user.is_authenticated %}
             <a href="{% url 'accounts:settings' %}" class="btn btn-ghost btn-xs" aria-label="Account settings">Settings</a>
-            <form method="post" action="{% url 'accounts:logout' %}" class="inline-flex">
+            <form method="post" action="{% url 'stagedoor:logout' %}" class="inline-flex">
               {% csrf_token %}
               <button class="btn btn-ghost btn-xs" aria-label="Log out">Log Out</button>
             </form>
           {% else %}
             <a href="{% url 'accounts:login' %}" class="btn btn-ghost btn-xs">Log In</a>
-            <a href="{% url 'accounts:signup' %}" class="btn btn-primary btn-xs">Sign Up</a>
           {% endif %}
         </div>
       </div>

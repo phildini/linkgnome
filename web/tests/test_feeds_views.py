@@ -1,5 +1,5 @@
 """Tests for feeds views (dashboard, refresh, polling)."""
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -7,7 +7,6 @@ from accounts.models import User
 from feeds.models import ScoredLink, FeedFetchJob
 
 
-@override_settings(RATELIMIT_ENABLE=False)
 class DashboardTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
@@ -63,7 +62,6 @@ class DashboardTest(TestCase):
         assert response_page2.status_code == 200
 
 
-@override_settings(RATELIMIT_ENABLE=False)
 class RefreshTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
@@ -96,7 +94,6 @@ class RefreshTest(TestCase):
         assert b"300" in response.content or b"299" in response.content
 
 
-@override_settings(RATELIMIT_ENABLE=False)
 class FeedTableTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
