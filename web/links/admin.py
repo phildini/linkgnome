@@ -1,7 +1,7 @@
 """Admin configuration for links app."""
 from django.contrib import admin
 
-from links.models import Follow, Identity, Link
+from links.models import Follow, Identity, Link, PublicLink
 
 
 @admin.register(Identity)

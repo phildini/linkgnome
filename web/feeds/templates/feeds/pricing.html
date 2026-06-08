@@ -47,7 +47,7 @@
         {% if prices %}
           <div class="mt-4 space-y-3">
             {% for price in prices %}
-              <div class="flex items-center justify-between p-3 rounded-lg {% if price.interval == 'month' %}bg-base-200/50{% else %}bg-base-200/50{% endif %}">
+              <div class="flex items-center justify-between p-3 rounded-lg bg-base-200/50">
                 <div>
                   <p class="text-3xl font-bold">${{ price.amount_dollars }}</p>
                   <p class="text-sm text-base-content/50">per {{ price.interval }}</p>
@@ -92,8 +92,7 @@
   </div>
 
   <div class="mt-12 text-center text-sm text-base-content/50">
-    <p>Everything is covered by our <a href="#" class="link link-primary">privacy policy</a>.</p>
-    <p class="mt-1">Questions? <a href="mailto:support@linkgno.me" class="link link-primary">Contact us</a>.</p>
+    <p>Questions? <a href="mailto:support@linkgno.me" class="link link-primary">Contact us</a>.</p>
   </div>
 </div>
 {% endblock %}

@@ -3,6 +3,28 @@ from django.conf import settings
 from django.db import models
 
 
+class PublicLink(models.Model):
+    url = models.URLField(max_length=2000)
+    title = models.CharField(max_length=1000, blank=True)
+    score = models.FloatField(default=0)
+    platform = models.CharField(max_length=50, blank=True)
+    author_names = models.CharField(max_length=500, blank=True)
+    author_post_urls = models.JSONField(default=list, blank=True)
+    num_users = models.IntegerField(default=0)
+    post_count = models.IntegerField(default=0)
+    boost_count = models.IntegerField(default=0)
+    like_count = models.IntegerField(default=0)
+    last_posted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-score"]
+
+    def __str__(self):
+        return f"{self.title or self.url} (score: {self.score})"
+
+
 class Identity(models.Model):
     """Universal person/profile across platforms."""
 
