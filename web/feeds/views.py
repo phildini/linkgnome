@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 from django_q.tasks import async_task
 
 from feeds.models import FeedFetchJob, ScoredLink
+from billing.models import Price
 from links.models import Link as PersistentLink
 from links.models import PublicLink
 
@@ -37,7 +38,8 @@ def landing(request):
 
 
 def pricing(request):
-    return render(request, "feeds/pricing.html")
+    prices = Price.objects.filter(active=True).order_by("amount_dollars")
+    return render(request, "feeds/pricing.html", {"prices": prices})
 
 
 @login_required

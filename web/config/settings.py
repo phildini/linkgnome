@@ -106,7 +106,6 @@ LOGOUT_REDIRECT_URL = "/accounts/login/"
 # Stripe
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-STRIPE_GNOME_PRICE_ID = os.environ.get("STRIPE_GNOME_PRICE_ID", "")
 
 # Stagedoor (passwordless email login)
 STAGEDOOR_SITE_NAME = "LinkGnome"

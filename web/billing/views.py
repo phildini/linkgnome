@@ -4,18 +4,19 @@ import logging
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect
 
 from accounts.models import User
+from billing.models import Price
 
 logger = logging.getLogger(__name__)
 
 
 @login_required
-def create_checkout(request):
-    price_id = settings.STRIPE_GNOME_PRICE_ID
-    if not price_id:
-        messages.error(request, "Pricing is not configured yet. Check back soon.")
+def create_checkout(request, price_id):
+    price = get_object_or_404(Price, id=price_id, active=True)
+    if not price.stripe_price_id:
+        messages.error(request, "This price is not configured yet. Check back soon.")
         return redirect("feeds:pricing")
 
     import stripe
@@ -24,7 +25,7 @@ def create_checkout(request):
     try:
         session = stripe.checkout.Session.create(
             mode="subscription",
-            line_items=[{"price": price_id, "quantity": 1}],
+            line_items=[{"price": price.stripe_price_id, "quantity": 1}],
             client_reference_id=str(request.user.id),
             customer_email=request.user.email,
             success_url=request.build_absolute_uri("/billing/success/"),
