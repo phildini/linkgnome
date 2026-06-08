@@ -1,7 +1,9 @@
 """Feed views — landing, dashboard, HTMX endpoints."""
+from collections import OrderedDict
 from datetime import datetime, timedelta, timezone as dt_tz
 
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -12,7 +14,6 @@ from django_q.tasks import async_task
 from feeds.models import FeedFetchJob, ScoredLink
 from billing.models import Price
 from links.models import Link as PersistentLink
-from links.models import PublicLink
 
 PAGE_SIZE = 25
 
@@ -32,9 +33,28 @@ def _effective_time_range(user, requested: str) -> str:
     return requested
 
 
+def _get_top_public_links():
+    links = cache.get("top_public_links")
+    if links is not None:
+        return links
+
+    cutoff = django_tz.now() - timedelta(hours=24)
+    qs = ScoredLink.objects.filter(last_seen_at__gte=cutoff).order_by("-score")
+
+    seen = OrderedDict()
+    for sl in qs.iterator():
+        if sl.url not in seen:
+            seen[sl.url] = sl
+        if len(seen) >= 25:
+            break
+
+    links = list(seen.values())
+    cache.set("top_public_links", links, 60 * 15)
+    return links
+
+
 def landing(request):
-    public_links = PublicLink.objects.all()
-    return render(request, "feeds/landing.html", {"public_links": public_links})
+    return render(request, "feeds/landing.html", {"public_links": _get_top_public_links()})
 
 
 def pricing(request):
@@ -55,7 +75,7 @@ def dashboard(request):
 
     return render(request, "feeds/dashboard.html", {
         "links": page,
-        "public_links": PublicLink.objects.all(),
+        "public_links": _get_top_public_links(),
         "can_refresh": can_refresh,
         "cooldown_remaining": cooldown_remaining,
         "has_mastodon": user.mastodon_accounts.filter(is_active=True).exists(),

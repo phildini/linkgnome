@@ -23,8 +23,6 @@
         </a>
         <div class="flex items-center gap-1.5 text-xs text-base-content/60 mt-0.5 flex-wrap">
           <span>{{ link.author_names }}</span>
-          <span aria-hidden="true">·</span>
-          <span>{{ link.num_users }} user{{ link.num_users|pluralize }}</span>
           {% if link.last_posted_at %}
             <span aria-hidden="true">·</span>
             <span>{{ link.last_posted_at|timesince }} ago</span>
