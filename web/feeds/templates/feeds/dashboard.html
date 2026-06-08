@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}LinkGnome{% endblock %}
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-4">
@@ -18,10 +19,35 @@
       <a href="{% url 'accounts:settings' %}" class="link link-primary ml-2">Settings</a>
     </div>
   {% elif not has_mastodon and not has_bluesky %}
-    <div class="alert alert-info" role="status">
-      Connect a Mastodon or Bluesky account to get started.
-      <a href="{% url 'accounts:settings' %}" class="link link-primary ml-2">Settings</a>
+    <div class="card bg-base-200/50 shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title text-lg">Connect your accounts to get started</h2>
+        <p class="text-sm text-base-content/60 mb-4">Link your Mastodon or Bluesky account and we'll start scoring the links from your timeline.</p>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <a href="{% url 'accounts:connect_mastodon' %}" class="btn btn-outline btn-sm gap-2">
+            <span class="text-lg">🐘</span> Connect Mastodon
+          </a>
+          <a href="{% url 'accounts:connect_bluesky' %}" class="btn btn-outline btn-sm gap-2">
+            <span class="text-lg">🦋</span> Connect Bluesky
+          </a>
+        </div>
+        <div class="mt-4 text-xs text-base-content/40">
+          <p>We only read your timeline — we never post, boost, or follow.</p>
+        </div>
+      </div>
     </div>
+
+    {% if public_links %}
+      <section aria-label="Trending across LinkGnome">
+        <h2 class="text-lg font-semibold mb-2">While you set up, here's what others are finding</h2>
+        <div class="space-y-1 gnome-card-list">
+          {% for link in public_links %}
+            {% include "components/public_link_card.html" %}
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
   {% endif %}
 
   {% include "feeds/feed_content.html" %}

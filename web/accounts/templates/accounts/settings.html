@@ -9,7 +9,11 @@
       <h2 class="card-title">Account</h2>
       <p>Username: <strong>{{ user.username }}</strong></p>
       <p>Email: <strong>{{ user.email }}</strong></p>
-      <p>Plan: <span class="badge badge-primary">{{ user.plan|title }}</span></p>
+      <p>Plan: <span class="badge badge-primary">{{ user.plan|title }}</span>
+        {% if user.plan == "free" %}
+          <a href="{% url 'feeds:pricing' %}" class="link link-primary text-xs ml-2">Upgrade to Gnome →</a>
+        {% endif %}
+      </p>
     </div>
   </div>
 

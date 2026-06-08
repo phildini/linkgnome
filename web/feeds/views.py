@@ -1,4 +1,4 @@
-"""Feed views — dashboard, HTMX endpoints."""
+"""Feed views — landing, dashboard, HTMX endpoints."""
 from datetime import datetime, timedelta, timezone as dt_tz
 
 from django.contrib.auth.decorators import login_required
@@ -11,6 +11,7 @@ from django_q.tasks import async_task
 
 from feeds.models import FeedFetchJob, ScoredLink
 from links.models import Link as PersistentLink
+from links.models import PublicLink
 
 PAGE_SIZE = 25
 
@@ -30,6 +31,15 @@ def _effective_time_range(user, requested: str) -> str:
     return requested
 
 
+def landing(request):
+    public_links = PublicLink.objects.all()
+    return render(request, "feeds/landing.html", {"public_links": public_links})
+
+
+def pricing(request):
+    return render(request, "feeds/pricing.html")
+
+
 @login_required
 def dashboard(request):
     user = request.user
@@ -43,6 +53,7 @@ def dashboard(request):
 
     return render(request, "feeds/dashboard.html", {
         "links": page,
+        "public_links": PublicLink.objects.all(),
         "can_refresh": can_refresh,
         "cooldown_remaining": cooldown_remaining,
         "has_mastodon": user.mastodon_accounts.filter(is_active=True).exists(),

@@ -17,6 +17,16 @@ def _create_schedule(sender, **kwargs):
             "repeats": -1,
         },
     )
+    Schedule.objects.update_or_create(
+        name="refresh_public_feed",
+        defaults={
+            "func": "django.core.management.call_command",
+            "args": "('refresh_public_feed',)",
+            "schedule_type": Schedule.MINUTES,
+            "minutes": 15,
+            "repeats": -1,
+        },
+    )
 
 
 class FeedsConfig(AppConfig):

@@ -1,7 +1,7 @@
 """Admin configuration for links app."""
 from django.contrib import admin
 
-from links.models import Follow, Identity, Link
+from links.models import Follow, Identity, Link, PublicLink
 
 
 @admin.register(Identity)
@@ -24,3 +24,9 @@ class LinkAdmin(admin.ModelAdmin):
     list_filter = ["posted_by__platform"]
     search_fields = ["url", "title"]
     autocomplete_fields = ["posted_by"]
+
+
+@admin.register(PublicLink)
+class PublicLinkAdmin(admin.ModelAdmin):
+    list_display = ["__str__", "score", "num_users", "updated_at"]
+    ordering = ["-score"]
