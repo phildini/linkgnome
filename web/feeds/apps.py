@@ -19,6 +19,7 @@ def _create_schedule(sender, **kwargs):
     )
 
 
+
 class FeedsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "feeds"

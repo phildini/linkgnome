@@ -1,0 +1,41 @@
+{% load static %}
+<article class="card card-compact gnome-card{% if "mastodon" in link.platform and "bluesky" not in link.platform %} gnome-card-mastodon{% elif "bluesky" in link.platform and "mastodon" not in link.platform %} gnome-card-bluesky{% endif %}">
+  <div class="card-body">
+    <div class="flex items-start gap-2">
+      <div class="flex items-center gap-1 shrink-0 mt-0.5">
+        {% if "mastodon" in link.platform %}
+          <span class="badge badge-sm font-mono gnome-badge-m">M</span>
+        {% endif %}
+        {% if "bluesky" in link.platform %}
+          <span class="badge badge-sm font-mono gnome-badge-b">B</span>
+        {% endif %}
+        <span class="badge badge-sm font-mono gnome-badge-score">{{ link.score|floatformat:0 }}</span>
+      </div>
+      <div class="min-w-0 flex-1">
+        {% if link.title and link.title != link.url %}
+          <p class="font-medium text-sm leading-snug truncate">{{ link.title }}</p>
+        {% endif %}
+        <a href="{{ link.url }}"
+           class="text-xs link link-primary truncate block"
+           target="_blank"
+           rel="noopener noreferrer">
+          {{ link.url }}
+        </a>
+        <div class="flex items-center gap-1.5 text-xs text-base-content/60 mt-0.5 flex-wrap">
+          <span>{{ link.author_names }}</span>
+          {% if link.last_posted_at %}
+            <span aria-hidden="true">·</span>
+            <span>{{ link.last_posted_at|timesince }} ago</span>
+          {% endif %}
+          <span class="ml-auto whitespace-nowrap">
+            <span>📝{{ link.post_count }}</span>
+            <span aria-hidden="true"> · </span>
+            <span>🔄{{ link.boost_count }}</span>
+            <span aria-hidden="true"> · </span>
+            <span>❤️{{ link.like_count }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>

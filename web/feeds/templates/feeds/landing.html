@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}LinkGnome — Your social feeds, distilled{% endblock %}
+{% block content %}
+
+<div class="max-w-4xl mx-auto">
+  <section class="text-center py-16 md:py-24">
+    <h1 class="text-4xl md:text-5xl font-bold tracking-tight">
+      Your social feeds,<br>
+      <span class="text-primary">distilled</span>.
+    </h1>
+    <p class="mt-6 text-lg text-base-content/70 max-w-2xl mx-auto leading-relaxed">
+      LinkGnome watches your Mastodon and Bluesky timelines and surfaces the links
+      your community is actually talking about — ranked by engagement, not recency.
+      No algorithm. No noise. Just the links your people are sharing.
+    </p>
+    {% if not user.is_authenticated %}
+      <div class="mt-8 flex items-center justify-center gap-4">
+        <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-lg">Get Started Free</a>
+        <a href="{% url 'feeds:pricing' %}" class="btn btn-ghost btn-lg">See Pricing</a>
+      </div>
+    {% else %}
+      <div class="mt-8">
+        <a href="{% url 'feeds:dashboard' %}" class="btn btn-primary btn-lg">Go to Your Dashboard</a>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="mt-8" aria-label="Trending links across LinkGnome">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold">Trending on LinkGnome</h2>
+      <p class="text-xs text-base-content/40">Updated every 15 minutes · past 24 hours</p>
+    </div>
+    {% if public_links %}
+      <div class="space-y-1 gnome-card-list">
+        {% for link in public_links %}
+          {% include "components/public_link_card.html" %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-center py-12 text-base-content/40">
+        <p class="text-lg">No links yet</p>
+        <p class="text-sm mt-2">Links will appear here once LinkGnome users start finding them.</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="mt-16 text-center pb-16">
+    <h2 class="text-2xl font-bold">How it works</h2>
+    <div class="grid md:grid-cols-3 gap-8 mt-8 text-left max-w-3xl mx-auto">
+      <div class="card bg-base-200/50">
+        <div class="card-body">
+          <div class="text-3xl mb-2">🔗</div>
+          <h3 class="font-semibold">Connect Your Accounts</h3>
+          <p class="text-sm text-base-content/60 mt-1">Link your Mastodon or Bluesky account. We never post — we just watch your timeline.</p>
+        </div>
+      </div>
+      <div class="card bg-base-200/50">
+        <div class="card-body">
+          <div class="text-3xl mb-2">📊</div>
+          <h3 class="font-semibold">We Score Every Link</h3>
+          <p class="text-sm text-base-content/60 mt-1">Every link from the people you follow is scored by how many times it was shared, boosted, and liked.</p>
+        </div>
+      </div>
+      <div class="card bg-base-200/50">
+        <div class="card-body">
+          <div class="text-3xl mb-2">🎯</div>
+          <h3 class="font-semibold">See What Matters</h3>
+          <p class="text-sm text-base-content/60 mt-1">No more doomscrolling. Just a ranked list of links your community is talking about right now.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+{% if not user.is_authenticated %}
+  <div class="fixed bottom-0 left-0 right-0 bg-base-200/90 backdrop-blur border-t border-base-300 z-50">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+      <p class="text-sm font-medium">Your social feeds, distilled. <span class="text-base-content/50 font-normal">Get started free — no credit card.</span></p>
+      <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-sm shrink-0">Sign Up Free →</a>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

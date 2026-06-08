@@ -24,3 +24,6 @@ class LinkAdmin(admin.ModelAdmin):
     list_filter = ["posted_by__platform"]
     search_fields = ["url", "title"]
     autocomplete_fields = ["posted_by"]
+
+
+ 

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Pricing — LinkGnome{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto py-12">
+  <div class="text-center mb-12">
+    <h1 class="text-4xl font-bold">Simple Pricing</h1>
+    <p class="mt-4 text-base-content/60 text-lg">Start free. Upgrade when you need more.</p>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-6 items-start">
+    <div class="card bg-base-100 shadow-md border border-base-300">
+      <div class="card-body">
+        <h2 class="card-title text-2xl">Free</h2>
+        <p class="text-4xl font-bold mt-2">$0</p>
+        <p class="text-sm text-base-content/50">forever</p>
+        <ul class="mt-6 space-y-3">
+          <li class="flex items-center gap-2 text-sm">
+            <span class="text-success">✓</span> 1 Mastodon account
+          </li>
+          <li class="flex items-center gap-2 text-sm">
+            <span class="text-success">✓</span> 1 Bluesky account
+          </li>
+          <li class="flex items-center gap-2 text-sm">
+            <span class="text-success">✓</span> 24-hour feed
+          </li>
+          <li class="flex items-center gap-2 text-sm">
+            <span class="text-success">✓</span> Magic link login
+          </li>
+          <li class="flex items-center gap-2 text-sm">
+            <span class="text-success">✓</span> Public trending feed
+          </li>
+        </ul>
+        {% if user.is_authenticated and user.plan == "free" %}
+          <p class="text-sm text-base-content/50 mt-4">You're on the Free plan.</p>
+        {% else %}
+          <a href="{% url 'accounts:login' %}" class="btn btn-outline btn-primary mt-6 w-full">Get Started Free</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card bg-primary/5 shadow-md border-2 border-primary">
+      <div class="card-body">
+        <div class="flex items-center justify-between">
+          <h2 class="card-title text-2xl">Gnome</h2>
+          <span class="badge badge-primary">Popular</span>
+        </div>
+        {% if prices %}
+          <div class="mt-4 space-y-3">
+            {% for price in prices %}
+              <div class="flex items-center justify-between p-3 rounded-lg {% if price.interval == 'month' %}bg-base-200/50{% else %}bg-base-200/50{% endif %}">
+                <div>
+                  <p class="text-3xl font-bold">${{ price.amount_dollars }}</p>
+                  <p class="text-sm text-base-content/50">per {{ price.interval }}</p>
+                </div>
+                {% if user.is_authenticated %}
+                  {% if user.plan == "gnome" %}
+                    <span class="badge badge-ghost">Current plan</span>
+                  {% else %}
+                    <a href="{% url 'billing:create_checkout' price.id %}" class="btn btn-primary btn-sm">Subscribe</a>
+                  {% endif %}
+                {% else %}
+                  <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-sm">Subscribe</a>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+          <ul class="mt-6 space-y-3">
+            <li class="flex items-center gap-2 text-sm">
+              <span class="text-success">✓</span> Unlimited Mastodon accounts
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <span class="text-success">✓</span> Unlimited Bluesky accounts
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <span class="text-success">✓</span> 7-day feed history
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <span class="text-success">✓</span> Magic link login
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <span class="text-success">✓</span> Public trending feed
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <span class="text-success">✓</span> Support indie dev
+            </li>
+          </ul>
+        {% else %}
+          <p class="text-sm text-base-content/50 mt-4">Pricing coming soon.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-12 text-center text-sm text-base-content/50">
+    <p>Everything is covered by our <a href="#" class="link link-primary">privacy policy</a>.</p>
+    <p class="mt-1">Questions? <a href="mailto:support@linkgno.me" class="link link-primary">Contact us</a>.</p>
+  </div>
+</div>
+{% endblock %}

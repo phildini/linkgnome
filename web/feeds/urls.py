@@ -5,7 +5,9 @@ from feeds import views
 app_name = "feeds"
 
 urlpatterns = [
-    path("", views.dashboard, name="dashboard"),
+    path("", views.landing, name="landing"),
+    path("pricing/", views.pricing, name="pricing"),
+    path("dashboard/", views.dashboard, name="dashboard"),
     path("feeds/table/", views.feed_table, name="feed_table"),
     path("feeds/refresh/", views.refresh_feeds, name="refresh_feeds"),
     path("feeds/status/", views.feed_status, name="feed_status"),

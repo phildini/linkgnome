@@ -47,7 +47,7 @@ class DashboardTest(TestCase):
         user.save()
         self.client.force_login(user)
         response = self.client.get(reverse("feeds:dashboard"))
-        assert b"Connect a Mastodon" in response.content
+        assert b"Connect Mastodon" in response.content
 
     def test_dashboard_pagination(self):
         self.client.force_login(self.user)
