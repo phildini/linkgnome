@@ -47,7 +47,11 @@
         {% if prices %}
           <div class="mt-4 space-y-3">
             {% for price in prices %}
+<<<<<<< HEAD
               <div class="flex items-center justify-between p-3 rounded-lg bg-base-200/50">
+=======
+              <div class="flex items-center justify-between p-3 rounded-lg {% if price.interval == 'month' %}bg-base-200/50{% else %}bg-base-200/50{% endif %}">
+>>>>>>> f400774 (Drive Stripe billing from Price model with monthly/yearly toggle)
                 <div>
                   <p class="text-3xl font-bold">${{ price.amount_dollars }}</p>
                   <p class="text-sm text-base-content/50">per {{ price.interval }}</p>
