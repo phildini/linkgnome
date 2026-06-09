@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import html
-import re
 
 import httpx
+from bs4 import BeautifulSoup
 
 from linkgnome.db import LinkgnomeDB
 
@@ -73,36 +73,22 @@ async def fetch_all_titles(
     return metadata
 
 
-def _meta_content(page_html: str, attr: str, value: str) -> str | None:
-    m = re.search(
-        rf'<meta[^>]*{re.escape(attr)}=[\'"](?:{re.escape(value)})[\'"][^>]*>',
-        page_html, re.IGNORECASE,
-    )
-    if not m:
-        return None
-    tag = m.group()
-    cm = re.search(r'content=[\'"]([^\'"]*)[\'"]', tag, re.IGNORECASE)
-    if cm:
-        title = cm.group(1).strip()
-        return html.unescape(title) if title else None
-    return None
-
-
 def _extract_title(html_content: str) -> str | None:
     """Extract page title from HTML, trying og:title, twitter:title, then <title>."""
-    title = _meta_content(html_content, "property", "og:title")
-    if title:
-        return title
+    soup = BeautifulSoup(html_content, "html.parser")
 
-    title = _meta_content(html_content, "name", "twitter:title")
-    if title:
-        return title
+    tag = soup.find("meta", property="og:title")
+    if tag and tag.get("content"):
+        title = tag["content"].strip()
+        return html.unescape(title) if title else None
 
-    m = re.search(
-        r"<title[^>]*>(.*?)</title>", html_content, re.IGNORECASE | re.DOTALL
-    )
-    if m:
-        title = m.group(1).strip()
+    tag = soup.find("meta", attrs={"name": "twitter:title"})
+    if tag and tag.get("content"):
+        title = tag["content"].strip()
+        return html.unescape(title) if title else None
+
+    if soup.title and soup.title.string:
+        title = soup.title.string.strip()
         return html.unescape(title) if title else None
 
     return None
