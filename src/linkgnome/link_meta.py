@@ -73,27 +73,31 @@ async def fetch_all_titles(
     return metadata
 
 
+def _meta_content(page_html: str, attr: str, value: str) -> str | None:
+    m = re.search(
+        rf'<meta[^>]*{re.escape(attr)}=[\'"](?:{re.escape(value)})[\'"][^>]*>',
+        page_html, re.IGNORECASE,
+    )
+    if not m:
+        return None
+    tag = m.group()
+    cm = re.search(r'content=[\'"]([^\'"]*)[\'"]', tag, re.IGNORECASE)
+    if cm:
+        title = cm.group(1).strip()
+        return html.unescape(title) if title else None
+    return None
+
+
 def _extract_title(html_content: str) -> str | None:
     """Extract page title from HTML, trying og:title, twitter:title, then <title>."""
-    # og:title
-    m = re.search(
-        r'<meta\s+property=[\'"]og:title[\'"]\s+content=[\'"](.*?)[\'"]\s*/?>',
-        html_content, re.IGNORECASE,
-    )
-    if m:
-        title = m.group(1).strip()
-        return html.unescape(title) if title else None
+    title = _meta_content(html_content, "property", "og:title")
+    if title:
+        return title
 
-    # twitter:title
-    m = re.search(
-        r'<meta\s+name=[\'"]twitter:title[\'"]\s+content=[\'"](.*?)[\'"]\s*/?>',
-        html_content, re.IGNORECASE,
-    )
-    if m:
-        title = m.group(1).strip()
-        return html.unescape(title) if title else None
+    title = _meta_content(html_content, "name", "twitter:title")
+    if title:
+        return title
 
-    # <title>
     m = re.search(
         r"<title[^>]*>(.*?)</title>", html_content, re.IGNORECASE | re.DOTALL
     )
