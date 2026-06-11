@@ -30,18 +30,42 @@
           <img src="{% static 'img/linkgnome.png' %}" alt="LinkGnome" class="h-8 w-auto" />
           <span class="text-lg font-bold text-base-content">LinkGnome</span>
         </a>
-        <div class="flex items-center gap-1">
-          <a href="{% url 'feeds:pricing' %}" class="btn btn-ghost btn-xs">Pricing</a>
+
+        <div class="hidden md:flex items-center gap-1">
+          <a href="{% url 'feeds:pricing' %}" class="btn btn-ghost btn-sm">Pricing</a>
           {% if user.is_authenticated %}
-            <a href="{% url 'feeds:dashboard' %}" class="btn btn-ghost btn-xs">Dashboard</a>
-            <a href="{% url 'accounts:settings' %}" class="btn btn-ghost btn-xs" aria-label="Account settings">Settings</a>
+            <a href="{% url 'feeds:dashboard' %}" class="btn btn-ghost btn-sm">Dashboard</a>
+            <a href="{% url 'accounts:settings' %}" class="btn btn-ghost btn-sm">Settings</a>
             <form method="post" action="{% url 'stagedoor:logout' %}" class="inline-flex">
               {% csrf_token %}
-              <button class="btn btn-ghost btn-xs" aria-label="Log out">Log Out</button>
+              <button class="btn btn-ghost btn-sm">Log Out</button>
             </form>
           {% else %}
-            <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-xs">Log In</a>
+            <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-sm">Log In</a>
           {% endif %}
+        </div>
+
+        <div class="dropdown dropdown-end md:hidden">
+          <button class="btn btn-ghost btn-sm" aria-label="Menu">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <ul class="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-lg border border-base-300" tabindex="0">
+            <li><a href="{% url 'feeds:pricing' %}">Pricing</a></li>
+            {% if user.is_authenticated %}
+              <li><a href="{% url 'feeds:dashboard' %}">Dashboard</a></li>
+              <li><a href="{% url 'accounts:settings' %}">Settings</a></li>
+              <li>
+                <form method="post" action="{% url 'stagedoor:logout' %}">
+                  {% csrf_token %}
+                  <button class="w-full text-left">Log Out</button>
+                </form>
+              </li>
+            {% else %}
+              <li><a href="{% url 'accounts:login' %}">Log In</a></li>
+            {% endif %}
+          </ul>
         </div>
       </div>
     </div>
