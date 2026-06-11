@@ -145,6 +145,20 @@ def _store_scored_links_sync(user, scored_links) -> None:
     logger.info("Stored %d scored links for %s", len(scored_links), user.username)
 
 
+async def _update_persistent_titles(scored_links: list) -> None:
+    """Copy titles from scored results back to PersistentLink records."""
+    updated = 0
+    for scored in scored_links:
+        if not scored.title:
+            continue
+        rows = await sync_to_async(
+            PersistentLink.objects.filter(canonical_url=scored.url).update
+        )(title=scored.title)
+        updated += rows
+    with_titles = sum(1 for s in scored_links if s.title)
+    logger.info("Updated titles for %d persistent links (%d/%d scored had titles)", updated, with_titles, len(scored_links))
+
+
 async def _persist_identities_and_links(user, posts: list) -> None:
     """Create/update Identity, Follow, and Link records from fetched posts."""
     from linkgnome.scorer import normalize_url
