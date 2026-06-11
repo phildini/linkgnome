@@ -73,6 +73,7 @@ async def _fetch_user_feeds_async(user_id: int) -> None:
         logger.info("Scored %d links", len(scored))
 
         await _store_scored_links(user, scored)
+        await _update_persistent_titles(scored)
 
         job.status = "completed"
         job.completed_at = datetime.now(timezone.utc)
