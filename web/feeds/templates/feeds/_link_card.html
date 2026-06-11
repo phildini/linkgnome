@@ -12,9 +12,9 @@
         <span class="badge badge-sm font-mono gnome-badge-score" role="listitem" aria-label="Score: {{ link.score|floatformat:0 }}">{{ link.score|floatformat:0 }}</span>
       </div>
       <div class="min-w-0 flex-1">
-        {% if link.title and link.title != link.url %}
-          <p class="font-medium text-sm leading-snug truncate">{{ link.title }}</p>
-        {% endif %}
+{% if link.title %}
+  <p class="font-medium text-sm leading-snug truncate">{{ link.title }}</p>
+{% endif %}
         <a href="{{ link.url }}"
            class="text-xs link link-primary truncate block"
            target="_blank"
