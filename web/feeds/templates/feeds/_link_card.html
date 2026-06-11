@@ -1,0 +1,50 @@
+{% load static %}
+<article class="card card-compact gnome-card{% if "mastodon" in platform and "bluesky" not in platform %} gnome-card-mastodon{% elif "bluesky" in platform and "mastodon" not in platform %} gnome-card-bluesky{% endif %}" tabindex="-1" aria-label="Link ranked {{ link.score|floatformat:0 }} from {{ platform }}">
+  <div class="card-body">
+    <div class="flex items-start gap-2">
+      <div class="flex items-center gap-1 shrink-0 mt-0.5" role="list" aria-label="Platform and score">
+        {% if "mastodon" in platform %}
+          <span class="badge badge-sm font-mono gnome-badge-m" role="listitem" aria-label="Mastodon">M</span>
+        {% endif %}
+        {% if "bluesky" in platform %}
+          <span class="badge badge-sm font-mono gnome-badge-b" role="listitem" aria-label="Bluesky">B</span>
+        {% endif %}
+        <span class="badge badge-sm font-mono gnome-badge-score" role="listitem" aria-label="Score: {{ link.score|floatformat:0 }}">{{ link.score|floatformat:0 }}</span>
+      </div>
+      <div class="min-w-0 flex-1">
+        {% if link.title and link.title != link.url %}
+          <p class="font-medium text-sm leading-snug truncate">{{ link.title }}</p>
+        {% endif %}
+        <a href="{{ link.url }}"
+           class="text-xs link link-primary truncate block"
+           target="_blank"
+           rel="noopener noreferrer"
+           aria-label="Open article: {{ link.title|default:link.url }}">
+          {{ link.url }}
+        </a>
+        <div class="flex items-center gap-1.5 text-xs text-base-content/60 mt-0.5 flex-wrap">
+          <span aria-label="Shared by {{ author_names }}">{{ author_names }}</span>
+          {% if author_post_urls %}
+            <span aria-hidden="true">·</span>
+            <a href="{{ author_post_urls }}"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="link link-secondary whitespace-nowrap"
+               aria-label="View original post, {{ post_time|timesince }} ago">
+              {% with ago=post_time|timesince %}{% if ago == "0 minutes" %}just now{% else %}{{ ago }} ago{% endif %}{% endwith %}
+            </a>
+          {% endif %}
+          <span class="ml-auto whitespace-nowrap" role="list"
+title="{{ link.post_count }}×1.0 + {{ link.boost_count }}×0.5 + {{ link.like_count }}×0.25 = {{ link.score|floatformat:1 }}"
+aria-label="Engagement score: {{ link.post_count }} posts, {{ link.boost_count }} boosts, {{ link.like_count }} likes">
+            <span role="listitem" aria-label="{{ link.post_count }} posts">📝{{ link.post_count }}</span>
+            <span aria-hidden="true"> · </span>
+            <span role="listitem" aria-label="{{ link.boost_count }} boosts">🔄{{ link.boost_count }}</span>
+            <span aria-hidden="true"> · </span>
+            <span role="listitem" aria-label="{{ link.like_count }} likes">❤️{{ link.like_count }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>

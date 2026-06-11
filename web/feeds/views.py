@@ -125,7 +125,7 @@ def _filter_links(user, platform: str, time_range: str = "24h"):
         qs = qs.filter(posted_by__platform="mastodon")
     elif platform == "bluesky":
         qs = qs.filter(posted_by__platform="bluesky")
-    return qs.order_by("-score")
+    return qs.select_related("posted_by").order_by("-score")
 
 
 @login_required
