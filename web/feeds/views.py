@@ -25,11 +25,10 @@ TIME_RANGES = {
 
 
 def _effective_time_range(user, requested: str) -> str:
-    """Return the actual time range a user can access based on their plan."""
-    allowed = {"free": ["24h"], "gnome": ["24h", "7d"], "wizard": list(TIME_RANGES)}
-    if requested not in allowed.get(user.plan, ["24h"]):
-        return "24h"
-    return requested
+    """Return the actual time range a user can access."""
+    if requested in TIME_RANGES:
+        return requested
+    return "24h"
 
 
 def _get_top_public_links():

@@ -10,41 +10,14 @@ from feeds.views import _effective_time_range, _filter_links
 
 
 class EffectiveTimeRangeTest(TestCase):
-    def test_free_user_defaults_to_24h(self):
+    def test_valid_ranges_accepted(self):
         user = User.objects.create_user(username="f", email="f@b.com", password="x")
-        assert _effective_time_range(user, "24h") == "24h"
+        for r in ("24h", "7d", "30d", "all"):
+            assert _effective_time_range(user, r) == r
 
-    def test_free_user_cannot_access_7d(self):
+    def test_invalid_range_falls_back_to_24h(self):
         user = User.objects.create_user(username="f", email="f@b.com", password="x")
-        assert _effective_time_range(user, "7d") == "24h"
-
-    def test_free_user_cannot_access_30d(self):
-        user = User.objects.create_user(username="f", email="f@b.com", password="x")
-        assert _effective_time_range(user, "30d") == "24h"
-
-    def test_free_user_cannot_access_all(self):
-        user = User.objects.create_user(username="f", email="f@b.com", password="x")
-        assert _effective_time_range(user, "all") == "24h"
-
-    def test_gnome_user_can_access_24h(self):
-        user = User.objects.create_user(username="g", email="g@b.com", password="x", plan="gnome")
-        assert _effective_time_range(user, "24h") == "24h"
-
-    def test_gnome_user_can_access_7d(self):
-        user = User.objects.create_user(username="g", email="g@b.com", password="x", plan="gnome")
-        assert _effective_time_range(user, "7d") == "7d"
-
-    def test_gnome_user_cannot_access_30d(self):
-        user = User.objects.create_user(username="g", email="g@b.com", password="x", plan="gnome")
-        assert _effective_time_range(user, "30d") == "24h"
-
-    def test_wizard_user_can_access_all(self):
-        user = User.objects.create_user(username="w", email="w@b.com", password="x", plan="wizard")
-        assert _effective_time_range(user, "all") == "all"
-
-    def test_wizard_user_can_access_30d(self):
-        user = User.objects.create_user(username="w", email="w@b.com", password="x", plan="wizard")
-        assert _effective_time_range(user, "30d") == "30d"
+        assert _effective_time_range(user, "invalid") == "24h"
 
 
 class FilterLinksPlanTest(TestCase):
