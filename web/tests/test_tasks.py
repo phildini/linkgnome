@@ -19,7 +19,7 @@ class StoreScoredLinksTest(TestCase):
         _store_scored_links_sync(user, [])
         assert ScoredLink.objects.filter(user=user).count() == 0
 
-    def test_store_replaces_old(self):
+    def test_store_upserts_existing(self):
         user = User.objects.create_user(username="t", email="a@b.com", password="x")
         ScoredLink.objects.create(
             user=user, url="https://old.com", score=1.0, platform="m",
@@ -30,8 +30,7 @@ class StoreScoredLinksTest(TestCase):
             like_count=0, posts=[], source_platforms={Platform.MASTODON},
         )
         _store_scored_links_sync(user, [scored_link])
-        assert ScoredLink.objects.filter(user=user).count() == 1
-        assert ScoredLink.objects.filter(user=user).first().url == "https://new.com"
+        assert ScoredLink.objects.filter(user=user).count() == 2
 
     def test_stores_multiple_links(self):
         user = User.objects.create_user(username="t", email="a@b.com", password="x")
@@ -63,7 +62,7 @@ class StoreScoredLinksTest(TestCase):
         stored = ScoredLink.objects.get(user=user)
         assert "Test User" in stored.author_names
 
-    def test_stores_last_posted_at(self):
+    def test_stores_last_seen_at(self):
         user = User.objects.create_user(username="t", email="a@b.com", password="x")
         post = Post(
             id="1", platform=Platform.MASTODON, author="u",
@@ -77,8 +76,8 @@ class StoreScoredLinksTest(TestCase):
         )
         _store_scored_links_sync(user, [scored_link])
         stored = ScoredLink.objects.get(user=user)
-        assert stored.last_posted_at is not None
-        assert stored.last_posted_at == datetime(2026, 5, 15, 12, 0, 0, tzinfo=timezone.utc)
+        assert stored.last_seen_at is not None
+        assert stored.last_seen_at == datetime(2026, 5, 15, 12, 0, 0, tzinfo=timezone.utc)
 
     def test_stores_author_post_urls(self):
         user = User.objects.create_user(username="t", email="a@b.com", password="x")
@@ -98,7 +97,7 @@ class StoreScoredLinksTest(TestCase):
         assert len(stored.author_post_urls) == 1
         assert "https://mastodon.social/@user/123" in stored.author_post_urls
 
-    def test_last_posted_at_uses_newest_post(self):
+    def test_last_seen_at_uses_newest_post(self):
         user = User.objects.create_user(username="t", email="a@b.com", password="x")
         old = Post(id="1", platform=Platform.MASTODON, author="a",
                    author_display_name="A", content="", urls=[],
@@ -113,7 +112,7 @@ class StoreScoredLinksTest(TestCase):
         )
         _store_scored_links_sync(user, [scored_link])
         stored = ScoredLink.objects.get(user=user)
-        assert stored.last_posted_at == datetime(2026, 6, 1, tzinfo=timezone.utc)
+        assert stored.last_seen_at == datetime(2026, 6, 1, tzinfo=timezone.utc)
 
 
 @pytest.mark.skip(reason="SQLite + asyncio + Django test DB locking issue")
