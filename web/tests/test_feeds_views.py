@@ -108,8 +108,10 @@ class FeedTableTest(TestCase):
 
     def test_table_with_links(self):
         self.client.force_login(self.user)
+        from datetime import datetime, timezone, timedelta
         ScoredLink.objects.create(
             user=self.user, url="https://ex.com", score=5.0, platform="m",
+            last_posted_at=datetime.now(timezone.utc) - timedelta(hours=1),
         )
         response = self.client.get(reverse("feeds:feed_table"))
         assert response.status_code == 200

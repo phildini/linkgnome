@@ -13,7 +13,6 @@ from django_q.tasks import async_task
 
 from feeds.models import FeedFetchJob, ScoredLink
 from billing.models import Price
-from links.models import Link as PersistentLink
 
 PAGE_SIZE = 25
 
@@ -109,23 +108,15 @@ def feed_table(request):
 
 
 def _filter_links(user, platform: str, time_range: str = "24h"):
-    if time_range == "24h":
-        qs = ScoredLink.objects.filter(user=user)
-        if platform == "mastodon":
-            qs = qs.filter(platform__icontains="mastodon")
-        elif platform == "bluesky":
-            qs = qs.filter(platform__icontains="bluesky")
-        return qs
-
-    qs = PersistentLink.objects.filter(posted_by__followed_by__user=user)
+    qs = ScoredLink.objects.filter(user=user)
     cutoff = TIME_RANGES.get(time_range)
     if cutoff:
-        qs = qs.filter(posted_at__gte=datetime.now(dt_tz.utc) - cutoff)
+        qs = qs.filter(last_posted_at__gte=datetime.now(dt_tz.utc) - cutoff)
     if platform == "mastodon":
-        qs = qs.filter(posted_by__platform="mastodon")
+        qs = qs.filter(platform__icontains="mastodon")
     elif platform == "bluesky":
-        qs = qs.filter(posted_by__platform="bluesky")
-    return qs.select_related("posted_by").order_by("-score")
+        qs = qs.filter(platform__icontains="bluesky")
+    return qs.order_by("-score")
 
 
 @login_required

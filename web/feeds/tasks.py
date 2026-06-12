@@ -10,7 +10,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 
 from feeds.models import FeedFetchJob, ScoredLink
-from links.models import Follow, Identity, Link as PersistentLink
+from links.models import Follow, Identity
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,6 @@ async def _fetch_user_feeds_async(user_id: int) -> None:
         logger.info("Scored %d links", len(scored))
 
         await _store_scored_links(user, scored)
-        await _update_persistent_titles(scored)
 
         job.status = "completed"
         job.completed_at = datetime.now(timezone.utc)
@@ -113,56 +112,45 @@ def _extract_post_url(post) -> str:
 
 
 def _store_scored_links_sync(user, scored_links) -> None:
-    """Synchronous version of _store_scored_links."""
-    with transaction.atomic():
-        ScoredLink.objects.filter(user=user).delete()
-        ScoredLink.objects.bulk_create([
-            ScoredLink(
-                user=user,
-                url=link.url,
-                title=link.title,
-                score=link.score,
-                platform="+".join(
-                    sorted(p.value for p in (link.source_platforms or []))
-                ),
-                author_names=", ".join(
-                    set(
-                        p.author_display_name or p.author
-                        for p in (link.posts or [])
-                    )
-                ),
-                author_post_urls=[_extract_post_url(p) for p in (link.posts or []) if p],
-                last_posted_at=max(
-                    (p.created_at for p in (link.posts or []) if p and p.created_at),
-                    default=None,
-                ),
-                post_count=link.post_count,
-                boost_count=link.boost_count,
-                like_count=link.like_count,
+    """Upsert scored links — preserves historical data for 7d+ queries."""
+    count = 0
+    for link in scored_links:
+        platform = "+".join(
+            sorted(p.value for p in (link.source_platforms or []))
+        )
+        author_names = ", ".join(
+            set(
+                p.author_display_name or p.author
+                for p in (link.posts or [])
             )
-            for link in scored_links
-        ])
-    logger.info("Stored %d scored links for %s", len(scored_links), user.username)
+        )
+        author_post_urls = [_extract_post_url(p) for p in (link.posts or []) if p]
+        last_posted_at = max(
+            (p.created_at for p in (link.posts or []) if p and p.created_at),
+            default=None,
+        )
 
-
-async def _update_persistent_titles(scored_links: list) -> None:
-    """Copy titles from scored results back to PersistentLink records."""
-    updated = 0
-    for scored in scored_links:
-        if not scored.title:
-            continue
-        rows = await sync_to_async(
-            PersistentLink.objects.filter(canonical_url=scored.url).update
-        )(title=scored.title)
-        updated += rows
-    with_titles = sum(1 for s in scored_links if s.title)
-    logger.info("Updated titles for %d persistent links (%d/%d scored had titles)", updated, with_titles, len(scored_links))
+        _, created = ScoredLink.objects.update_or_create(
+            user=user,
+            url=link.url,
+            defaults={
+                "title": link.title or link.url,
+                "score": link.score,
+                "platform": platform,
+                "author_names": author_names,
+                "author_post_urls": author_post_urls,
+                "last_posted_at": last_posted_at,
+                "post_count": link.post_count,
+                "boost_count": link.boost_count,
+                "like_count": link.like_count,
+            },
+        )
+        count += 1
+    logger.info("Stored %d scored links for %s", count, user.username)
 
 
 async def _persist_identities_and_links(user, posts: list) -> None:
-    """Create/update Identity, Follow, and Link records from fetched posts."""
-    from linkgnome.scorer import normalize_url
-
+    """Create/update Identity and Follow records from fetched posts."""
     for post in posts:
         identity, _ = await sync_to_async(Identity.objects.update_or_create)(
             platform=post.platform.value,
@@ -175,30 +163,3 @@ async def _persist_identities_and_links(user, posts: list) -> None:
         await sync_to_async(Follow.objects.get_or_create)(
             user=user, identity=identity,
         )
-
-        for url in post.urls:
-            canonical = normalize_url(url)
-            if not canonical:
-                continue
-            like_count = post.like_count
-            boost_count = post.boost_count
-            score = boost_count * 0.5 + like_count * 0.25 + 1.0
-
-            await sync_to_async(PersistentLink.objects.update_or_create)(
-                canonical_url=canonical,
-                platform_post_id=post.id,
-                defaults={
-                    "url": url,
-                    "posted_by": identity,
-                    "posted_at": post.created_at,
-                    "post_url": post.id,
-                    "post_text": post.content[:500] if post.content else "",
-                    "score": round(score, 2),
-                    "like_count": like_count,
-                    "boost_count": boost_count,
-                    "post_count": 1,
-                },
-            )
-
-    total = await sync_to_async(PersistentLink.objects.count)()
-    logger.info("Persisted %d posts → total %d persistent links", len(posts), total)
