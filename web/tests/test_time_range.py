@@ -8,6 +8,8 @@ from accounts.models import User
 from feeds.models import ScoredLink
 from feeds.views import _effective_time_range, _filter_links
 
+NOW = datetime.now(timezone.utc)
+
 
 class EffectiveTimeRangeTest(TestCase):
     def test_valid_ranges_accepted(self):
@@ -29,7 +31,7 @@ class FilterLinksPlanTest(TestCase):
     def test_24h_includes_recent_links(self):
         ScoredLink.objects.create(
             user=self.user, url="https://ex.com/a", score=10.0,
-            platform="mastodon",
+            platform="mastodon", last_seen_at=NOW,
         )
         results = _filter_links(self.user, "all", "24h")
         assert len(results) == 1
@@ -37,10 +39,10 @@ class FilterLinksPlanTest(TestCase):
     def test_24h_excludes_old_links(self):
         link = ScoredLink.objects.create(
             user=self.user, url="https://ex.com/old", score=1.0,
-            platform="mastodon",
+            platform="mastodon", last_seen_at=NOW,
         )
         ScoredLink.objects.filter(pk=link.pk).update(
-            first_seen_at=datetime.now(timezone.utc) - timedelta(days=2),
+            last_seen_at=NOW - timedelta(days=2),
         )
         results = _filter_links(self.user, "all", "24h")
         assert len(results) == 0
@@ -48,11 +50,11 @@ class FilterLinksPlanTest(TestCase):
     def test_24h_filters_by_platform(self):
         ScoredLink.objects.create(
             user=self.user, url="https://ex.com/a", score=10.0,
-            platform="mastodon",
+            platform="mastodon", last_seen_at=NOW,
         )
         ScoredLink.objects.create(
             user=self.user, url="https://ex.com/b", score=5.0,
-            platform="bluesky",
+            platform="bluesky", last_seen_at=NOW,
         )
         results = _filter_links(self.user, "mastodon", "24h")
         assert len(results) == 1
@@ -72,7 +74,7 @@ class FilterLinksPlanTest(TestCase):
             platform="mastodon",
         )
         ScoredLink.objects.filter(pk=link.pk).update(
-            first_seen_at=datetime.now(timezone.utc) - timedelta(days=30),
+            first_seen_at=NOW - timedelta(days=30),
         )
         ScoredLink.objects.create(
             user=self.user, url="https://ex.com/a", score=10.0,

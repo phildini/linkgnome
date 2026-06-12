@@ -125,6 +125,10 @@ def _store_scored_links_sync(user, scored_links) -> None:
             )
         )
         author_post_urls = [_extract_post_url(p) for p in (link.posts or []) if p]
+        last_seen_at = max(
+            (p.created_at for p in (link.posts or []) if p and p.created_at),
+            default=None,
+        )
 
         ScoredLink.objects.update_or_create(
             user=user,
@@ -135,6 +139,7 @@ def _store_scored_links_sync(user, scored_links) -> None:
                 "platform": platform,
                 "author_names": author_names,
                 "author_post_urls": author_post_urls,
+                "last_seen_at": last_seen_at,
                 "post_count": link.post_count,
                 "boost_count": link.boost_count,
                 "like_count": link.like_count,

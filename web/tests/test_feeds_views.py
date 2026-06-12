@@ -27,9 +27,11 @@ class DashboardTest(TestCase):
 
     def test_dashboard_shows_links(self):
         self.client.force_login(self.user)
+        from django.utils import timezone
         ScoredLink.objects.create(
             user=self.user, url="https://example.com/a", score=10.0,
             platform="mastodon", title="Test Link",
+            last_seen_at=timezone.now(),
         )
         response = self.client.get(reverse("feeds:dashboard"))
         assert response.status_code == 200
