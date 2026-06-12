@@ -130,7 +130,7 @@ def _store_scored_links_sync(user, scored_links) -> None:
             default=None,
         )
 
-        ScoredLink.objects.update_or_create(
+        obj, created = ScoredLink.objects.update_or_create(
             user=user,
             url=link.url,
             defaults={
@@ -139,12 +139,14 @@ def _store_scored_links_sync(user, scored_links) -> None:
                 "platform": platform,
                 "author_names": author_names,
                 "author_post_urls": author_post_urls,
-                "last_seen_at": last_seen_at,
                 "post_count": link.post_count,
                 "boost_count": link.boost_count,
                 "like_count": link.like_count,
             },
         )
+        if created and last_seen_at:
+            obj.last_seen_at = last_seen_at
+            obj.save(update_fields=["last_seen_at"])
         count += 1
     logger.info("Stored %d scored links for %s", count, user.username)
 
