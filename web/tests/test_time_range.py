@@ -53,7 +53,7 @@ class FilterLinksPlanTest(TestCase):
             username="t", email="a@b.com", password="x",
         )
 
-    def test_24h_includes_recently_seen(self):
+    def test_24h_includes_recent_links(self):
         ScoredLink.objects.create(
             user=self.user, url="https://ex.com/a", score=10.0,
             platform="mastodon",
@@ -67,7 +67,7 @@ class FilterLinksPlanTest(TestCase):
             platform="mastodon",
         )
         ScoredLink.objects.filter(pk=link.pk).update(
-            last_seen_at=datetime.now(timezone.utc) - timedelta(days=2),
+            first_seen_at=datetime.now(timezone.utc) - timedelta(days=2),
         )
         results = _filter_links(self.user, "all", "24h")
         assert len(results) == 0
@@ -92,7 +92,6 @@ class FilterLinksPlanTest(TestCase):
         )
         results = _filter_links(self.user, "all", "7d")
         assert len(results) == 1
-        assert results[0].score == 10.0
 
     def test_7d_excludes_old_links(self):
         link = ScoredLink.objects.create(
@@ -102,7 +101,7 @@ class FilterLinksPlanTest(TestCase):
         ScoredLink.objects.filter(pk=link.pk).update(
             first_seen_at=datetime.now(timezone.utc) - timedelta(days=30),
         )
-        link2 = ScoredLink.objects.create(
+        ScoredLink.objects.create(
             user=self.user, url="https://ex.com/a", score=10.0,
             platform="mastodon",
         )

@@ -111,10 +111,7 @@ def _filter_links(user, platform: str, time_range: str = "24h"):
     qs = ScoredLink.objects.filter(user=user)
     cutoff = TIME_RANGES.get(time_range)
     if cutoff:
-        if time_range == "24h":
-            qs = qs.filter(last_seen_at__gte=datetime.now(dt_tz.utc) - cutoff)
-        else:
-            qs = qs.filter(first_seen_at__gte=datetime.now(dt_tz.utc) - cutoff)
+        qs = qs.filter(first_seen_at__gte=datetime.now(dt_tz.utc) - cutoff)
     if platform == "mastodon":
         qs = qs.filter(platform__icontains="mastodon")
     elif platform == "bluesky":
