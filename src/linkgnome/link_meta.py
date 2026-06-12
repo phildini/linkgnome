@@ -73,6 +73,15 @@ async def fetch_all_titles(
     return metadata
 
 
+def _is_valid_title(title: str) -> bool:
+    """Reject titles that are clearly HTML attribute garbage."""
+    if len(title) < 3:
+        return False
+    if "=" in title:
+        return False
+    return True
+
+
 def _extract_title(html_content: str) -> str | None:
     """Extract page title from HTML, trying og:title, twitter:title, then <title>."""
     soup = BeautifulSoup(html_content, "html.parser")
@@ -80,15 +89,18 @@ def _extract_title(html_content: str) -> str | None:
     tag = soup.find("meta", property="og:title")
     if tag and tag.get("content"):
         title = tag["content"].strip()
-        return html.unescape(title) if title else None
+        if _is_valid_title(title):
+            return html.unescape(title) if title else None
 
     tag = soup.find("meta", attrs={"name": "twitter:title"})
     if tag and tag.get("content"):
         title = tag["content"].strip()
-        return html.unescape(title) if title else None
+        if _is_valid_title(title):
+            return html.unescape(title) if title else None
 
     if soup.title and soup.title.string:
         title = soup.title.string.strip()
-        return html.unescape(title) if title else None
+        if _is_valid_title(title):
+            return html.unescape(title) if title else None
 
     return None
