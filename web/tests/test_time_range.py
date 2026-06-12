@@ -52,32 +52,59 @@ class FilterLinksPlanTest(TestCase):
         self.user = User.objects.create_user(
             username="t", email="a@b.com", password="x",
         )
+
+    def test_24h_includes_recently_seen(self):
         ScoredLink.objects.create(
             user=self.user, url="https://ex.com/a", score=10.0,
             platform="mastodon",
-            last_posted_at=datetime.now(timezone.utc) - timedelta(hours=2),
         )
+        results = _filter_links(self.user, "all", "24h")
+        assert len(results) == 1
+
+    def test_24h_excludes_old_links(self):
+        link = ScoredLink.objects.create(
+            user=self.user, url="https://ex.com/old", score=1.0,
+            platform="mastodon",
+        )
+        ScoredLink.objects.filter(pk=link.pk).update(
+            last_seen_at=datetime.now(timezone.utc) - timedelta(days=2),
+        )
+        results = _filter_links(self.user, "all", "24h")
+        assert len(results) == 0
 
     def test_24h_filters_by_platform(self):
         ScoredLink.objects.create(
+            user=self.user, url="https://ex.com/a", score=10.0,
+            platform="mastodon",
+        )
+        ScoredLink.objects.create(
             user=self.user, url="https://ex.com/b", score=5.0,
             platform="bluesky",
-            last_posted_at=datetime.now(timezone.utc) - timedelta(hours=1),
         )
         results = _filter_links(self.user, "mastodon", "24h")
         assert len(results) == 1
         assert results[0].url == "https://ex.com/a"
 
     def test_7d_includes_recent_links(self):
+        ScoredLink.objects.create(
+            user=self.user, url="https://ex.com/a", score=10.0,
+            platform="mastodon",
+        )
         results = _filter_links(self.user, "all", "7d")
         assert len(results) == 1
         assert results[0].score == 10.0
 
     def test_7d_excludes_old_links(self):
-        ScoredLink.objects.create(
+        link = ScoredLink.objects.create(
             user=self.user, url="https://ex.com/old", score=1.0,
             platform="mastodon",
-            last_posted_at=datetime.now(timezone.utc) - timedelta(days=30),
+        )
+        ScoredLink.objects.filter(pk=link.pk).update(
+            first_seen_at=datetime.now(timezone.utc) - timedelta(days=30),
+        )
+        link2 = ScoredLink.objects.create(
+            user=self.user, url="https://ex.com/a", score=10.0,
+            platform="mastodon",
         )
         results = _filter_links(self.user, "all", "7d")
         assert len(results) == 1
@@ -85,28 +112,30 @@ class FilterLinksPlanTest(TestCase):
 
     def test_all_shows_everything(self):
         ScoredLink.objects.create(
-            user=self.user, url="https://ex.com/old", score=1.0,
+            user=self.user, url="https://ex.com/a", score=10.0,
             platform="mastodon",
-            last_posted_at=datetime.now(timezone.utc) - timedelta(days=30),
+        )
+        ScoredLink.objects.create(
+            user=self.user, url="https://ex.com/b", score=5.0,
+            platform="bluesky",
         )
         results = _filter_links(self.user, "all", "all")
         assert len(results) == 2
 
 
-class ScoredLinkTimeRangeTest(TestCase):
+class DashboardRangeTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username="t", email="a@b.com", password="x",
         )
         self.user.plan = "gnome"
         self.user.save()
+
+    def test_dashboard_shows_links_for_7d(self):
         ScoredLink.objects.create(
             user=self.user, url="https://ex.com/a", score=10.0,
             platform="mastodon",
-            last_posted_at=datetime.now(timezone.utc) - timedelta(hours=2),
         )
-
-    def test_dashboard_shows_links_for_7d(self):
         self.client.force_login(self.user)
         response = self.client.get(reverse("feeds:dashboard") + "?range=7d")
         assert response.status_code == 200
